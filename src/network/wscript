@@ -82,6 +82,7 @@ def build(bld):
         'model/application.h',
         'model/buffer.h',
         'model/byte-tag-list.h',
+        'model/broadcom-node.h',
         'model/channel.h',
         'model/channel-list.h',
         'model/chunk.h',
