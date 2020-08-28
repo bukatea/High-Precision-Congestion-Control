@@ -58,6 +58,20 @@ public:
 			uint32_t incStage;
 		}hopState[IntHeader::maxHop];
 	} hp;
+	struct {
+		double m_x;
+		double m_rtt;
+		double m_cwnd;
+		double m_delta_throughput;
+		double m_exp_packets_ci;
+		uint32_t m_lastUpdateSeq;
+		DataRate m_curRate;
+		IntHop hop[IntHeader::maxHop];
+		struct {
+			double u;
+			DataRate Rc;
+		}hopState[IntHeader::maxHop];
+	} xcpint;
 	struct{
 		uint32_t m_lastUpdateSeq;
 		DataRate m_curRate;

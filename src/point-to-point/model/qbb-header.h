@@ -7,6 +7,7 @@
 #include "ns3/header.h"
 #include "ns3/buffer.h"
 #include "ns3/int-header.h"
+#include <cstring>
 
 namespace ns3 {
 
@@ -40,6 +41,7 @@ public:
   void SetDport(uint32_t _dport);
   void SetTs(uint64_t ts);
   void SetCnp();
+  void SetXCP(double cfi, uint32_t xi, uint32_t ctrlhop);
   void SetIntHeader(const IntHeader &_ih);
 
 //Getters
@@ -67,6 +69,9 @@ private:
   uint16_t flags;
   uint16_t m_pg;
   uint32_t m_seq; // the qbb sequence number.
+  double concflows_inc;
+  uint32_t xcpId;
+  uint32_t controlling_hop;
   IntHeader ih;
   
 };

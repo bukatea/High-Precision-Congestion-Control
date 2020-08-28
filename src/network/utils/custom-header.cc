@@ -161,6 +161,13 @@ void CustomHeader::Serialize (Buffer::Iterator start) const{
 		  // SeqTsHeader
 		  i.WriteHtonU32 (udp.seq);
 		  i.WriteHtonU16 (udp.pg);
+                  if (IntHeader::mode == 20) {
+                      uint64_t ui;
+                      std::memset(&ui, &udp.concflows_inc, sizeof(double));
+                      i.WriteHtonU64(ui);
+                      i.WriteHtonU32(udp.xcpId);
+                      i.WriteHtonU32(udp.controlling_hop);
+                  }
 		  udp.ih.Serialize(i);
 	  }else if (l3Prot == 0xFF){ // CNP
 		  i.WriteU8(cnp.qIndex);
@@ -174,6 +181,14 @@ void CustomHeader::Serialize (Buffer::Iterator start) const{
 		  i.WriteU16(ack.flags);
 		  i.WriteU16(ack.pg);
 		  i.WriteU32(ack.seq);
+                  // might need to change udp to ack here but don't know yet
+                  if (IntHeader::mode == 20) {
+                      uint64_t ui;
+                      std::memset(&ui, &udp.concflows_inc, sizeof(double));
+                      i.WriteHtonU64(ui);
+                      i.WriteHtonU32(udp.xcpId);
+                      i.WriteHtonU32(udp.controlling_hop);
+                  }
 		  udp.ih.Serialize(i);
 	  }else if (l3Prot == 0xFE){ // PFC
 		  i.WriteU32 (pfc.time);
@@ -293,6 +308,13 @@ CustomHeader::Deserialize (Buffer::Iterator start)
 		  // SeqTsHeader
 		  udp.seq = i.ReadNtohU32 ();
 		  udp.pg =  i.ReadNtohU16 ();
+                  if (IntHeader::mode == 20) {
+                          uint64_t ui;
+                          ui = i.ReadNtohU64();
+                          std::memset(&udp.concflows_inc, &ui, sizeof(double));
+                          udp.xcpId = i.ReadNtohU32();
+                          udp.controlling_hop = i.ReadNtohU32();
+                  }
 		  if (getInt)
 			  udp.ih.Deserialize(i);
 
@@ -310,6 +332,13 @@ CustomHeader::Deserialize (Buffer::Iterator start)
 		  ack.flags = i.ReadU16();
 		  ack.pg = i.ReadU16();
 		  ack.seq = i.ReadU32();
+                  if (IntHeader::mode == 20) {
+                          uint64_t ui;
+                          ui = i.ReadNtohU64();
+                          std::memset(&ack.concflows_inc, &ui, sizeof(double));
+                          ack.xcpId = i.ReadNtohU32();
+                          ack.controlling_hop = i.ReadNtohU32();
+                  }
 		  if (getInt)
 			  ack.ih.Deserialize(i);
 		  l4Size = GetAckSerializedSize();
@@ -329,11 +358,13 @@ uint8_t CustomHeader::GetIpv4EcnBits (void) const{
 }
 
 uint32_t CustomHeader::GetAckSerializedSize(void){
-	return sizeof(ack.sport) + sizeof(ack.dport) + sizeof(ack.flags) + sizeof(ack.pg) + sizeof(ack.seq) + IntHeader::GetStaticSize();
+	uint32_t val = sizeof(ack.sport) + sizeof(ack.dport) + sizeof(ack.flags) + sizeof(ack.pg) + sizeof(ack.seq) + IntHeader::GetStaticSize();
+	return IntHeader::mode == 20 ? val + sizeof(udp.concflows_inc) + sizeof(udp.xcpId) + sizeof(udp.controlling_hop) : val;
 }
 
 uint32_t CustomHeader::GetUdpHeaderSize(void){
-	return 8 + sizeof(udp.pg) + sizeof(udp.seq) + IntHeader::GetStaticSize();
+	uint32_t val = 8 + sizeof(udp.pg) + sizeof(udp.seq) + IntHeader::GetStaticSize();
+	return IntHeader::mode == 20 ? val + sizeof(udp.concflows_inc) + sizeof(udp.xcpId) + sizeof(udp.controlling_hop) : val;
 }
 
 } // namespace ns3

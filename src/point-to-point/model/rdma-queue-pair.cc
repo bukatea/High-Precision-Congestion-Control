@@ -51,6 +51,14 @@ RdmaQueuePair::RdmaQueuePair(uint16_t pg, Ipv4Address _sip, Ipv4Address _dip, ui
 		hp.hopState[i].u = 1;
 		hp.hopState[i].incStage = 0;
 	}
+	xcpint.m_x = 0;
+	xcpint.m_rtt = 0;
+	xcpint.m_cwnd = 1;
+	xcpint.m_delta_throughput = 0;
+	xcpint.m_exp_packets_ci = 0;
+	xcpint.m_lastUpdateSeq = 0;
+	for (uint32_t i = 0; i < IntHeader::maxHop; i++)
+		xcpint.hopState[i].u = 1;
 
 	tmly.m_lastUpdateSeq = 0;
 	tmly.m_incStage = 0;

@@ -607,6 +607,8 @@ int main(int argc, char *argv[])
 		IntHeader::mode = 1;
 	else if (cc_mode == 3) // hpcc, use int
 		IntHeader::mode = 0;
+	else if (cc_mode == 20)
+		IntHeader::mode = 20;
 	else // others, no extra header
 		IntHeader::mode = 5;
 

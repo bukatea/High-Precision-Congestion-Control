@@ -24,6 +24,7 @@
 #include "ns3/header.h"
 #include "ns3/nstime.h"
 #include "ns3/int-header.h"
+#include <cstring>
 
 namespace ns3 {
 /**
@@ -67,6 +68,12 @@ private:
   uint16_t m_pg;
 public:
   IntHeader ih;
+
+  struct {
+    double m_concflows_inc;
+    uint32_t m_xcpId; // for debugging
+    uint32_t m_controlling_hop; // for debugging
+  } hdr_xcp;
 };
 
 } // namespace ns3

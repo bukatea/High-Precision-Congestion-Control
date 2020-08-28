@@ -7,6 +7,9 @@
 #include <ns3/custom-header.h>
 #include "qbb-net-device.h"
 #include <unordered_map>
+#include <ns3/timer.h>
+
+#define INITIAL_Te_VALUE 0.05
 
 namespace ns3 {
 
@@ -124,6 +127,35 @@ public:
 	void UpdateRateHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 	void UpdateRateHpTest(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 	void FastReactHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
+
+	/**********************
+	 * XCP-INT
+	 *********************/
+	static const double ALPHA;
+	static const double BETA;
+	static const double GAMMA;
+	static const double XCP_MAX_INTERVAL;
+	static const double XCP_MIN_INTERVAL;
+	Time m_Te;
+	Time m_Tq;
+	Time m_Tr;
+	Time m_avg_rtt;
+	Time m_high_rtt;
+	Time m_effective_rtt;
+	Ptr<Timer> m_queue_timer;
+	Ptr<Timer> m_estimation_control_timer;
+	Ptr<Timer> m_rtt_timer;
+	double m_input_traffic_bytes;
+	double m_sum_rtt_by_throughput;
+	double m_sum_inv_throughput;
+	unsigned int m_num_cc_packets_in_Te;
+	void Tq_timeout();
+	void Te_timeout();
+	void everyRTT();
+	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
+	void UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
+	void UpdateRateXcpintTest(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
+	void FastReactXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 
 	/**********************
 	 * TIMELY

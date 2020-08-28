@@ -23,6 +23,7 @@
 
 #include "ns3/header.h"
 #include "ns3/int-header.h"
+#include <cstring>
 
 namespace ns3 {
 /**
@@ -107,6 +108,9 @@ public:
 		  // SeqTsHeader
 		  uint16_t pg;
 		  uint32_t seq;
+                  double concflows_inc;
+                  uint32_t xcpId;
+                  uint32_t controlling_hop;
 		  IntHeader ih;
 	  } udp;
 	  // CnHeader
@@ -123,6 +127,9 @@ public:
 		  uint16_t flags;
 		  uint16_t pg;
 		  uint32_t seq; // the qbb sequence number.
+                  double concflows_inc;
+                  uint32_t xcpId;
+                  uint32_t controlling_hop;
 		  IntHeader ih;
 	  } ack;
 	  // PauseHeader
