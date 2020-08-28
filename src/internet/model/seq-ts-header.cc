@@ -28,13 +28,15 @@ NS_LOG_COMPONENT_DEFINE ("SeqTsHeader");
 
 namespace ns3 {
 
-NS_OBJECT_ENSURE_REGISTERED (SeqTsHeader);
+  NS_OBJECT_ENSURE_REGISTERED (SeqTsHeader);
 
-SeqTsHeader::SeqTsHeader ()
+  SeqTsHeader::SeqTsHeader ()
   : m_seq (0)
-{
-	if (IntHeader::mode == 1)
-		ih.ts = Simulator::Now().GetTimeStep();
+  {
+   if (IntHeader::mode == 1)
+    ih.ts = Simulator::Now().GetTimeStep();
+  else (IntHeader::mode == 20)
+    hdr_xcp.m_ts = Simulator::Now().GetTimeStep();
 }
 
 void
@@ -62,16 +64,20 @@ SeqTsHeader::GetPG (void) const
 Time
 SeqTsHeader::GetTs (void) const
 {
-	NS_ASSERT_MSG(IntHeader::mode == 1, "SeqTsHeader cannot GetTs when IntHeader::mode != 1");
-	return TimeStep (ih.ts);
+  if (IntHeader::mode == 1)
+    return TimeStep(ih.ts);
+  else if (IntHeader::mode == 20)
+    return TimeStep(hdr_xcp.m_ts);
+  NS_ASSERT_MSG(IntHeader::mode == 1 || IntHeader::mode == 20, "SeqTsHeader cannot GetTs when IntHeader::mode != 1");
+  return 0;
 }
 
 TypeId
 SeqTsHeader::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::SeqTsHeader")
-    .SetParent<Header> ()
-    .AddConstructor<SeqTsHeader> ()
+  .SetParent<Header> ()
+  .AddConstructor<SeqTsHeader> ()
   ;
   return tid;
 }
@@ -80,12 +86,15 @@ SeqTsHeader::GetInstanceTypeId (void) const
 {
   return GetTypeId ();
 }
+
 void
 SeqTsHeader::Print (std::ostream &os) const
 {
   //os << "(seq=" << m_seq << " time=" << TimeStep (m_ts).GetSeconds () << ")";
 	//os << m_seq << " " << TimeStep (m_ts).GetSeconds () << " " << m_pg;
 	os << m_seq << " " << m_pg;
+	if (IntHeader::mode == 20)
+		os << std::endl << hdr_xcp.m_ts << " " << hdr_xcp.m_concflows_inc << " " << hdr_xcp.m_xcpId;
 }
 uint32_t
 SeqTsHeader::GetSerializedSize (void) const
@@ -93,7 +102,8 @@ SeqTsHeader::GetSerializedSize (void) const
 	return GetHeaderSize();
 }
 uint32_t SeqTsHeader::GetHeaderSize(void){
-	return 6 + IntHeader::GetStaticSize();
+  uint32_t val = 6 + IntHeader::GetStaticSize();
+  return IntHeader::mode == 20 ? val + sizeof(hdr_xcp) : val;
 }
 
 void
@@ -102,6 +112,14 @@ SeqTsHeader::Serialize (Buffer::Iterator start) const
   Buffer::Iterator i = start;
   i.WriteHtonU32 (m_seq);
   i.WriteHtonU16 (m_pg);
+
+  if (IntHeader::mode == 20) {
+    i.WriteHtonU64(hdr_xcp.m_ts);
+    uint64_t ui;
+    std::memcpy(&ui, &hdr_xcp.m_concflows_inc, sizeof(double));
+    i.WriteHtonU64(ui);
+    i.WriteHtonU32(hdr_xcp.m_xcpId);
+  }
 
   // write IntHeader
   ih.Serialize(i);
@@ -112,6 +130,14 @@ SeqTsHeader::Deserialize (Buffer::Iterator start)
   Buffer::Iterator i = start;
   m_seq = i.ReadNtohU32 ();
   m_pg =  i.ReadNtohU16 ();
+
+  if (IntHeader::mode == 20) {
+    hdr_xcp.m_ts = i.ReadNtohU64();
+    uint64_t ui;
+    ui = i.ReadNtohU64();
+    std::memcpy(&hdr_xcp.m_concflows_inc, &ui, sizeof(double));
+    hdr_xcp.m_xcpId = i.ReadNtohU32();
+  }
 
   // read IntHeader
   ih.Deserialize(i);

@@ -12,12 +12,12 @@ namespace ns3 {
 	NS_OBJECT_ENSURE_REGISTERED(qbbHeader);
 
 	qbbHeader::qbbHeader(uint16_t pg)
-		: m_pg(pg), sport(0), dport(0), flags(0), m_seq(0)
+	: m_pg(pg), sport(0), dport(0), flags(0), m_seq(0)
 	{
 	}
 
 	qbbHeader::qbbHeader()
-		: m_pg(0), sport(0), dport(0), flags(0), m_seq(0)
+	: m_pg(0), sport(0), dport(0), flags(0), m_seq(0)
 	{}
 
 	qbbHeader::~qbbHeader()
@@ -40,12 +40,20 @@ namespace ns3 {
 		dport = _dport;
 	}
 
-	void qbbHeader::SetTs(uint64_t ts){
-		NS_ASSERT_MSG(IntHeader::mode == 1, "qbbHeader cannot SetTs when IntHeader::mode != 1");
-		ih.ts = ts;
+	void qbbHeader::SetTs(uint64_t tis){
+		if (IntHeader::mode == 1)
+			ih.ts = tis;
+		else if (IntHeader::mode == 20)
+			ts = tis;
+		NS_ASSERT_MSG(IntHeader::mode == 1 || IntHeader::mode == 20, "qbbHeader cannot SetTs when IntHeader::mode != 1");
 	}
 	void qbbHeader::SetCnp(){
 		flags |= 1 << FLAG_CNP;
+	}
+	void SetXCP(uint64_t times, double cfi, uint32_t xi) {
+		ts = times;
+		concflows_inc = cfi;
+		xcpId = xi;
 	}
 	void qbbHeader::SetIntHeader(const IntHeader &_ih){
 		ih = _ih;
@@ -69,34 +77,42 @@ namespace ns3 {
 	}
 
 	uint64_t qbbHeader::GetTs() const {
-		NS_ASSERT_MSG(IntHeader::mode == 1, "qbbHeader cannot GetTs when IntHeader::mode != 1");
-		return ih.ts;
+
+		if (IntHeader::mode == 1)
+			return ih.ts;
+		else if (IntHeader::mode == 20)
+			return ts;
+		NS_ASSERT_MSG(IntHeader::mode == 1 || IntHeader::mode == 20, "qbbHeader cannot GetTs when IntHeader::mode != 1");
+		return 0;
 	}
 	uint8_t qbbHeader::GetCnp() const{
 		return (flags >> FLAG_CNP) & 1;
 	}
 
 	TypeId
-		qbbHeader::GetTypeId(void)
+	qbbHeader::GetTypeId(void)
 	{
 		static TypeId tid = TypeId("ns3::qbbHeader")
-			.SetParent<Header>()
-			.AddConstructor<qbbHeader>()
-			;
+		.SetParent<Header>()
+		.AddConstructor<qbbHeader>()
+		;
 		return tid;
 	}
 	TypeId
-		qbbHeader::GetInstanceTypeId(void) const
+	qbbHeader::GetInstanceTypeId(void) const
 	{
 		return GetTypeId();
 	}
 	void qbbHeader::Print(std::ostream &os) const
 	{
 		os << "qbb:" << "pg=" << m_pg << ",seq=" << m_seq;
+		if (IntHeader::mode == 20)
+			os << ",ts=" << ts << ",concflows_inc=" << concflows_inc << ",xcpId=" << xcpId;
 	}
 	uint32_t qbbHeader::GetSerializedSize(void)  const
 	{
-		return GetBaseSize() + IntHeader::GetStaticSize();
+		uint32_t val = GetBaseSize() + IntHeader::GetStaticSize();
+		return IntHeader::mode == 20 ? val + sizeof(ts) + sizeof(concflows_inc) + sizeof(xcpId) : val;
 	}
 	uint32_t qbbHeader::GetBaseSize() {
 		qbbHeader tmp;
@@ -110,6 +126,12 @@ namespace ns3 {
 		i.WriteU16(flags);
 		i.WriteU16(m_pg);
 		i.WriteU32(m_seq);
+		if (IntHeader::mode == 20) {
+			i.WriteU64(ts);
+			uint64_t ui;
+			std::memcpy(&ui, &concflows_inc, sizeof(double));
+			i.WriteU32(xcpId);
+		}
 
 		// write IntHeader
 		ih.Serialize(i);
@@ -123,6 +145,13 @@ namespace ns3 {
 		flags = i.ReadU16();
 		m_pg = i.ReadU16();
 		m_seq = i.ReadU32();
+		if (IntHeader::mode == 20) {
+			ts = i.ReadU64();
+			uint64_t ui;
+			ui = i.ReadU64();
+			std::memcpy(&concflows_inc, &ui, sizeof(double));
+			xcpId = i.ReadU32();
+		}
 
 		// read IntHeader
 		ih.Deserialize(i);

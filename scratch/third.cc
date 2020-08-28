@@ -84,7 +84,6 @@ string qlen_mon_file;
 unordered_map<uint64_t, uint32_t> rate2kmax, rate2kmin;
 unordered_map<uint64_t, double> rate2pmax;
 
-
 uint64_t nic_rate;
 
 uint64_t maxRtt, maxBdp;
@@ -97,13 +96,19 @@ struct Interface{
 
 	Interface() : idx(0), up(false){}
 };
+// Mapping destination to interface for each node
 map<Ptr<Node>, map<Ptr<Node>, Interface> > nbr2if;
 // Mapping destination to next hop for each node: <node, <dest, <nexthop0, ...> > >
 map<Ptr<Node>, map<Ptr<Node>, vector<Ptr<Node> > > > nextHop;
+// propagation delay
 map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairDelay;
+// transmission delay
 map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairTxDelay;
+// bandwidth for all pairs of nodes in graph
 map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairBw;
+// bandwidth delay product for all pairs of nodes in graph
 map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairBdp;
+// rtt for all pairs of nodes in graph
 map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairRtt;
 
 void qp_finish(FILE* fout, Ptr<RdmaQueuePair> q){
@@ -607,6 +612,8 @@ int main(int argc, char *argv[])
 		IntHeader::mode = 1;
 	else if (cc_mode == 3) // hpcc, use int
 		IntHeader::mode = 0;
+	else if (cc_mode == 20) // xcpint, use int
+		IntHeader::mode = 20;
 	else // others, no extra header
 		IntHeader::mode = 5;
 
@@ -709,6 +716,8 @@ int main(int argc, char *argv[])
 		// because we want our IP to be the primary IP (first in the IP address list),
 		// so that the global routing is based on our IP
 		NetDeviceContainer d = qbb.Install(snode, dnode);
+
+		// setup PFC trace
 		if (snode->GetNodeType() == 0){
 			Ptr<Ipv4> ipv4 = snode->GetObject<Ipv4>();
 			ipv4->AddInterface(d.Get(0));

@@ -45,8 +45,11 @@ SwitchNode::SwitchNode(){
 		for (uint32_t j = 0; j < pCnt; j++)
 			for (uint32_t k = 0; k < qCnt; k++)
 				m_bytes[i][j][k] = 0;
-	for (uint32_t i = 0; i < pCnt; i++)
+	for (uint32_t i = 0; i < pCnt; i++) {
 		m_txBytes[i] = 0;
+		m_rxBytes[i] = 0;
+	}
+	m_concflows_inc_sum = 0;
 }
 
 int SwitchNode::GetOutDev(Ptr<const Packet> p, CustomHeader &ch){
@@ -178,6 +181,8 @@ void SwitchNode::ClearTable(){
 
 // This function can only be called in switch mode
 bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch){
+	// hopefully protected doesn't mess with stuff here, if it does then just add a getter
+	m_rxBytes[DynamicCast<QbbNetDevice>(device)->m_ifIndex] += packet->GetSize();
 	SendToDev(packet, ch);
 	return true;
 }
@@ -208,10 +213,19 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 	if (1){
 		uint8_t* buf = p->GetBuffer();
 		if (buf[PppHeader::GetStaticSize() + 9] == 0x11){ // udp packet
-			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + 6]; // ppp, ip, udp, SeqTs, INT
+			if (m_ccMode == 20){
+				SeqTsHeader *sh = (SeqTsHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8];
+				m_concflows_inc_sum += sh->hdr_xcp.m_concflows_inc;
+			}
+			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + SeqTsHeader::GetHeaderSize()]; // ppp, ip, udp, SeqTs, INT
 			Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(m_devices[ifIndex]);
 			if (m_ccMode == 3){ // HPCC
 				ih->PushHop(Simulator::Now().GetTimeStep(), m_txBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());
+			}
+			if (m_ccMode == 20){ // XCP-INT
+				uint64_t ui;
+				std::memcpy(&ui, &m_concflows_inc_sum, sizeof(double));
+				ih->PushHop(ui, m_rxBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());
 			}
 		}
 	}

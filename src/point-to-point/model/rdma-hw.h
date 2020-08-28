@@ -7,26 +7,32 @@
 #include <ns3/custom-header.h>
 #include "qbb-net-device.h"
 #include <unordered_map>
+#include "random-variable-stream.h"
+#include <ns3/timer.h>
+#include <unordered_set>
+#include <cstring>
+
+#define INITIAL_Te_VALUE 0.05
 
 namespace ns3 {
 
-struct RdmaInterfaceMgr{
-	Ptr<QbbNetDevice> dev;
-	Ptr<RdmaQueuePairGroup> qpGrp;
+	struct RdmaInterfaceMgr{
+		Ptr<QbbNetDevice> dev;
+		Ptr<RdmaQueuePairGroup> qpGrp;
 
-	RdmaInterfaceMgr() : dev(NULL), qpGrp(NULL) {}
-	RdmaInterfaceMgr(Ptr<QbbNetDevice> _dev){
-		dev = _dev;
-	}
-};
+		RdmaInterfaceMgr() : dev(NULL), qpGrp(NULL) {}
+		RdmaInterfaceMgr(Ptr<QbbNetDevice> _dev){
+			dev = _dev;
+		}
+	};
 
-class RdmaHw : public Object {
-public:
+	class RdmaHw : public Object {
+	public:
 
-	static TypeId GetTypeId (void);
-	RdmaHw();
+		static TypeId GetTypeId (void);
+		RdmaHw();
 
-	Ptr<Node> m_node;
+		Ptr<Node> m_node;
 	DataRate m_minRate;		//< Min sending rate
 	uint32_t m_mtu;
 	uint32_t m_cc_mode;
@@ -124,6 +130,42 @@ public:
 	void UpdateRateHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 	void UpdateRateHpTest(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 	void FastReactHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
+
+	/**********************
+	 * XCP-INT
+	 *********************/
+	static const double ALPHA;
+	static const double BETA;
+	static const double GAMMA;
+	static const double XCP_MIN_INTERVAL;
+	static const double XCP_MAX_INTERVAL;
+
+	struct XcpState {
+		double m_avg_rtt;
+		std::unordered_set<Ptr<RdmaQueuePair> > m_queue_pairs;
+
+		Time m_Te;
+		Ptr<Timer> m_estimation_control_timer;
+		// Time m_Tq;
+		// Ptr<Timer> m_queue_timer;
+		// Time m_Tr;
+		// Ptr<Timer> m_rtt_timer;
+
+		// uint32_t m_queue_bytes;
+		// uint32_t m_running_min_queue;
+
+		XcpState();
+
+		void Te_timeout();
+		// void Tq_timeout();
+		// void everyRTT();
+	};
+	std::unordered_map<Ptr<RdmaQueuePair>, XcpState> m_xcpStateMap;
+
+	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
+	void UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
+	void UpdateRateXcpintTest(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
+	void FastReactXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 
 	/**********************
 	 * TIMELY

@@ -9,15 +9,16 @@
 #include <ns3/custom-header.h>
 #include <ns3/int-header.h>
 #include <vector>
+#include <ns3/rtt-estimator.h>
 
 namespace ns3 {
 
-class RdmaQueuePair : public Object {
-public:
-	Time startTime;
-	Ipv4Address sip, dip;
-	uint16_t sport, dport;
-	uint64_t m_size;
+	class RdmaQueuePair : public Object {
+	public:
+		Time startTime;
+		Ipv4Address sip, dip;
+		uint16_t sport, dport;
+		uint64_t m_size;
 	uint64_t snd_nxt, snd_una; // next seq to send, the highest unacked seq
 	uint16_t m_pg;
 	uint16_t m_ipid;
@@ -58,6 +59,19 @@ public:
 			uint32_t incStage;
 		}hopState[IntHeader::maxHop];
 	} hp;
+	struct {
+		Ptr<RttMeanDeviation> m_rtt_estimator;
+		uint32_t packet_size;
+		uint32_t m_lastUpdateSeq;
+		DataRate m_curRate;
+		IntHop hop[IntHeader::maxHop];
+		struct {
+			bool m_valid;
+			uint32_t m_min_queue;
+			uint64_t m_start_rvbytes;
+			double m_start_flow_sum;
+		} hopState[IntHeader::maxHop];
+	} xcpint;
 	struct{
 		uint32_t m_lastUpdateSeq;
 		DataRate m_curRate;

@@ -24,6 +24,7 @@
 #include "ns3/header.h"
 #include "ns3/nstime.h"
 #include "ns3/int-header.h"
+#include <cstring>
 
 namespace ns3 {
 /**
@@ -33,40 +34,46 @@ namespace ns3 {
  * The header is made of a 32bits sequence number followed by
  * a 64bits time stamp.
  */
-class SeqTsHeader : public Header
-{
-public:
-  SeqTsHeader ();
+  class SeqTsHeader : public Header
+  {
+  public:
+    SeqTsHeader ();
 
   /**
    * \param seq the sequence number
    */
-  void SetSeq (uint32_t seq);
+    void SetSeq (uint32_t seq);
   /**
    * \return the sequence number
    */
-  uint32_t GetSeq (void) const;
+    uint32_t GetSeq (void) const;
   /**
    * \return the time stamp
    */
-  Time GetTs (void) const;
+    Time GetTs (void) const;
 
-  void SetPG (uint16_t pg);
-  uint16_t GetPG () const;
+    void SetPG (uint16_t pg);
+    uint16_t GetPG () const;
 
-  static TypeId GetTypeId (void);
-  virtual TypeId GetInstanceTypeId (void) const;
-  virtual void Print (std::ostream &os) const;
-  virtual uint32_t GetSerializedSize (void) const;
-  static uint32_t GetHeaderSize(void);
-private:
-  virtual void Serialize (Buffer::Iterator start) const;
-  virtual uint32_t Deserialize (Buffer::Iterator start);
+    static TypeId GetTypeId (void);
+    virtual TypeId GetInstanceTypeId (void) const;
+    virtual void Print (std::ostream &os) const;
+    virtual uint32_t GetSerializedSize (void) const;
+    static uint32_t GetHeaderSize(void);
+  private:
+    virtual void Serialize (Buffer::Iterator start) const;
+    virtual uint32_t Deserialize (Buffer::Iterator start);
 
-  uint32_t m_seq;
-  uint16_t m_pg;
-public:
-  IntHeader ih;
+    uint32_t m_seq;
+    uint16_t m_pg;
+  public:
+    IntHeader ih;
+
+    struct {
+      uint64_t m_ts;
+      double m_concflows_inc;
+    uint32_t m_xcpId; // for debugging
+  } hdr_xcp;
 };
 
 } // namespace ns3

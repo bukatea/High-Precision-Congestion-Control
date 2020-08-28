@@ -13,7 +13,7 @@ IntHeader::IntHeader() : nhop(0) {
 }
 
 uint32_t IntHeader::GetStaticSize(){
-	if (mode == 0){
+	if (mode == 0 || mode == 20){
 		return sizeof(hop) + sizeof(nhop);
 	}else if (mode == 1){
 		return sizeof(ts);
@@ -24,7 +24,7 @@ uint32_t IntHeader::GetStaticSize(){
 
 void IntHeader::PushHop(uint64_t time, uint64_t bytes, uint32_t qlen, uint64_t rate){
 	// only do this in INT mode
-	if (mode == 0){
+	if (mode == 0 || mode == 20){
 		uint32_t idx = nhop % maxHop;
 		hop[idx].Set(time, bytes, qlen, rate);
 		nhop++;
@@ -33,7 +33,7 @@ void IntHeader::PushHop(uint64_t time, uint64_t bytes, uint32_t qlen, uint64_t r
 
 void IntHeader::Serialize (Buffer::Iterator start) const{
 	Buffer::Iterator i = start;
-	if (mode == 0){
+	if (mode == 0 || mode == 20){
 		for (uint32_t j = 0; j < maxHop; j++){
 			i.WriteU32(hop[j].buf[0]);
 			i.WriteU32(hop[j].buf[1]);
@@ -46,7 +46,7 @@ void IntHeader::Serialize (Buffer::Iterator start) const{
 
 uint32_t IntHeader::Deserialize (Buffer::Iterator start){
 	Buffer::Iterator i = start;
-	if (mode == 0){
+	if (mode == 0 || mode == 20){
 		for (uint32_t j = 0; j < maxHop; j++){
 			hop[j].buf[0] = i.ReadU32();
 			hop[j].buf[1] = i.ReadU32();
