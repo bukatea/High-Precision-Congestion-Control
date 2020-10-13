@@ -49,6 +49,7 @@ SwitchNode::SwitchNode(){
 		m_txBytes[i] = 0;
 		m_rxBytes[i] = 0;
 	}
+	m_concflows_inc_sum = 0;
 }
 
 int SwitchNode::GetOutDev(Ptr<const Packet> p, CustomHeader &ch){
@@ -212,6 +213,12 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 	if (1){
 		uint8_t* buf = p->GetBuffer();
 		if (buf[PppHeader::GetStaticSize() + 9] == 0x11){ // udp packet
+			if (m_ccMode == 20){
+				SeqTsHeader *sh = (SeqTsHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8];
+				m_concflows_inc_sum += sh->hdr_xcp.m_concflows_inc;
+				if (m_concflows_inc_sum > sh->hdr_xcp.m_reverse_concflows_inc_sum)
+					sh->hdr_xcp.m_reverse_concflows_inc_sum = m_concflows_inc_sum;
+			}
 			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + SeqTsHeader::GetHeaderSize()]; // ppp, ip, udp, SeqTs, INT
 			Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(m_devices[ifIndex]);
 			if (m_ccMode == 3){ // HPCC

@@ -22,6 +22,8 @@ class SwitchNode : public Node{
 	uint64_t m_txBytes[pCnt]; // counter of tx bytes
 	uint64_t m_rxBytes[pCnt];
 
+	double m_concflows_inc_sum;
+
 protected:
 	bool m_ecnEnabled;
 	uint32_t m_ccMode;

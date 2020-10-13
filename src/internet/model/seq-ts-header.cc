@@ -31,13 +31,12 @@ namespace ns3 {
 NS_OBJECT_ENSURE_REGISTERED (SeqTsHeader);
 
 SeqTsHeader::SeqTsHeader ()
-  : m_seq (0),
-    m_concflows_inc(0),
-    m_xcpId(0),
-    m_controlling_hop(0)
+  : m_seq (0)
 {
 	if (IntHeader::mode == 1)
 		ih.ts = Simulator::Now().GetTimeStep();
+  else (IntHeader::mode == 20)
+    hdr_xcp.m_ts = Simulator::Now().GetTimeStep();
 }
 
 void
@@ -65,8 +64,12 @@ SeqTsHeader::GetPG (void) const
 Time
 SeqTsHeader::GetTs (void) const
 {
-	NS_ASSERT_MSG(IntHeader::mode == 1, "SeqTsHeader cannot GetTs when IntHeader::mode != 1");
-	return TimeStep (ih.ts);
+  if (IntHeader::mode == 1)
+    return TimeStep(ih.ts);
+  else if (IntHeader::mode == 20)
+    return TimeStep(hdr_xcp.m_ts);
+	NS_ASSERT_MSG(IntHeader::mode == 1 || IntHeader::mode == 20, "SeqTsHeader cannot GetTs when IntHeader::mode != 1");
+  return 0;
 }
 
 TypeId
@@ -83,6 +86,7 @@ SeqTsHeader::GetInstanceTypeId (void) const
 {
   return GetTypeId ();
 }
+
 void
 SeqTsHeader::Print (std::ostream &os) const
 {
@@ -90,7 +94,7 @@ SeqTsHeader::Print (std::ostream &os) const
 	//os << m_seq << " " << TimeStep (m_ts).GetSeconds () << " " << m_pg;
 	os << m_seq << " " << m_pg;
 	if (IntHeader::mode == 20)
-		os << std::endl << m_x << " " << m_rtt << " " << m_xcpId << " " << m_controlling_hop << " " << m_cwnd << " " << m_reverse_feedback << " " << m_delta_throughput;
+		os << std::endl << hdr_xcp.m_ts << " " << hdr_xcp.m_concflows_inc << " " << hdr_xcp.m_reverse_concflows_inc_sum << " " << hdr_xcp.m_xcpId;
 }
 uint32_t
 SeqTsHeader::GetSerializedSize (void) const
@@ -98,7 +102,7 @@ SeqTsHeader::GetSerializedSize (void) const
 	return GetHeaderSize();
 }
 uint32_t SeqTsHeader::GetHeaderSize(void){
-        uint32_t val = 6 + IntHeader::GetStaticSize();
+  uint32_t val = 6 + IntHeader::GetStaticSize();
 	return IntHeader::mode == 20 ? val + sizeof(hdr_xcp) : val;
 }
 
@@ -110,11 +114,13 @@ SeqTsHeader::Serialize (Buffer::Iterator start) const
   i.WriteHtonU16 (m_pg);
 
   if (IntHeader::mode == 20) {
+    i.WriteHtonU64(hdr_xcp.m_ts);
     uint64_t ui;
-    std::memset(&ui, &m_concflows_inc, sizeof(double));
+    std::memset(&ui, &hdr_xcp.m_concflows_inc, sizeof(double));
     i.WriteHtonU64(ui);
-    i.WriteHtonU32(m_xcpId);
-    i.WriteHtonU32(m_controlling_hop);
+    std::memset(&ui, &hdr_xcp.m_reverse_concflows_inc_sum, sizeof(double));
+    i.WriteHtonU64(ui);
+    i.WriteHtonU32(hdr_xcp.m_xcpId);
   }
 
   // write IntHeader
@@ -128,11 +134,13 @@ SeqTsHeader::Deserialize (Buffer::Iterator start)
   m_pg =  i.ReadNtohU16 ();
 
   if (IntHeader::mode == 20) {
+    hdr_xcp.m_ts = i.ReadNtohU64();
     uint64_t ui;
     ui = i.ReadNtohU64();
-    std::memset(&m_concflows_inc, &ui, sizeof(double));
-    m_xcpId = i.ReadNtohU32();
-    m_controlling_hop = i.ReadNtohU32();
+    std::memset(&hdr_xcp.m_concflows_inc, &ui, sizeof(double));
+    ui = i.ReadNtohU64();
+    std::memset(&hdp_xcp.m_reverse_concflows_inc_sum, &ui, sizeof(double));
+    hdr_xcp.m_xcpId = i.ReadNtohU32();
   }
 
   // read IntHeader

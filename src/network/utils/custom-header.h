@@ -31,19 +31,19 @@ namespace ns3 {
  *
  * \brief Custom packet header
  */
-class CustomHeader : public Header 
-{
-public:
+  class CustomHeader : public Header 
+  {
+  public:
   /**
    * \brief Construct a null custom header
    */
-  CustomHeader ();
-  CustomHeader (uint32_t _headerType);
+    CustomHeader ();
+    CustomHeader (uint32_t _headerType);
   /**
    * \enum EcnType
    * \brief ECN Type defined in \RFC{3168}
    */
-  enum EcnType
+    enum EcnType
     {
       // Prefixed with "ECN" to avoid name clash (bug 1723)
       ECN_NotECT = 0x00,
@@ -55,25 +55,25 @@ public:
    * \brief Get the type ID.
    * \return the object TypeId
    */
-  static TypeId GetTypeId (void);
-  virtual TypeId GetInstanceTypeId (void) const;
-  virtual void Print (std::ostream &os) const;
-  virtual uint32_t GetSerializedSize (void) const;
-  virtual void Serialize (Buffer::Iterator start) const;
-  virtual uint32_t Deserialize (Buffer::Iterator start);
+    static TypeId GetTypeId (void);
+    virtual TypeId GetInstanceTypeId (void) const;
+    virtual void Print (std::ostream &os) const;
+    virtual uint32_t GetSerializedSize (void) const;
+    virtual void Serialize (Buffer::Iterator start) const;
+    virtual uint32_t Deserialize (Buffer::Iterator start);
 
-  uint32_t brief, headerType, getInt;
-  enum HeaderType{
-	L2_Header = 1,
-	L3_Header = 2,
-	L4_Header = 4
-  };
+    uint32_t brief, headerType, getInt;
+    enum HeaderType{
+     L2_Header = 1,
+     L3_Header = 2,
+     L4_Header = 4
+   };
 
   // ppp header
-  uint16_t pppProto;
+   uint16_t pppProto;
 
   // IPv4 header
-  enum FlagsE {
+   enum FlagsE {
     DONT_FRAGMENT = (1<<0),
     MORE_FRAGMENTS = (1<<1)
   };
@@ -90,7 +90,7 @@ public:
   uint16_t m_headerSize; //!< IP header size
 
   union {
-	  struct {
+   struct {
 		  uint16_t sport;        //!< Source port
 		  uint16_t dport;   //!< Destination port
 		  uint32_t seq;  //!< Sequence number
@@ -100,44 +100,46 @@ public:
 		  uint16_t windowSize;        //!< Window size
 		  uint16_t urgentPointer;     //!< Urgent pointer
 		  uint8_t optionBuf[32]; // buffer for storing raw options
-	  } tcp;
-	  struct {
+   } tcp;
+   struct {
 		  uint16_t sport;        //!< Source port
 		  uint16_t dport;   //!< Destination port
 		  uint16_t payload_size;
 		  // SeqTsHeader
 		  uint16_t pg;
 		  uint32_t seq;
-                  double concflows_inc;
-                  uint32_t xcpId;
-                  uint32_t controlling_hop;
-		  IntHeader ih;
-	  } udp;
+      uint64_t ts;
+      double concflows_inc;
+      double reverse_concflows_inc_sum;
+      uint32_t xcpId;
+      IntHeader ih;
+    } udp;
 	  // CnHeader
-	  struct {
-		  uint16_t fid;
-		  uint8_t qIndex;
-		  uint16_t qfb;
-		  uint8_t ecnBits;
-		  uint16_t total;
-	  } cnp;
+    struct {
+      uint16_t fid;
+      uint8_t qIndex;
+      uint16_t qfb;
+      uint8_t ecnBits;
+      uint16_t total;
+    } cnp;
 	  // qbbHeader
-	  struct {
-		  uint16_t sport, dport;
-		  uint16_t flags;
-		  uint16_t pg;
+    struct {
+      uint16_t sport, dport;
+      uint16_t flags;
+      uint16_t pg;
 		  uint32_t seq; // the qbb sequence number.
-                  double concflows_inc;
-                  uint32_t xcpId;
-                  uint32_t controlling_hop;
-		  IntHeader ih;
-	  } ack;
+      uint64_t ts;
+      double concflows_inc;
+      double reverse_concflows_inc_sum;
+      uint32_t xcpId;
+      IntHeader ih;
+    } ack;
 	  // PauseHeader
-	  struct {
-		  uint32_t time;
-		  uint32_t qlen;
-		  uint8_t qIndex;
-	  } pfc;
+    struct {
+      uint32_t time;
+      uint32_t qlen;
+      uint8_t qIndex;
+    } pfc;
   };
 
   uint8_t GetIpv4EcnBits (void) const;

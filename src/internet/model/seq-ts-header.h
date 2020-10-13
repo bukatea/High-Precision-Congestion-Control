@@ -70,9 +70,10 @@ public:
   IntHeader ih;
 
   struct {
+    uint64_t m_ts;
     double m_concflows_inc;
+    double m_reverse_concflows_inc_sum;
     uint32_t m_xcpId; // for debugging
-    uint32_t m_controlling_hop; // for debugging
   } hdr_xcp;
 };
 

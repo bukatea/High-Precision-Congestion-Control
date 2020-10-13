@@ -7,6 +7,7 @@
 #include <ns3/custom-header.h>
 #include "qbb-net-device.h"
 #include <unordered_map>
+#include "random-variable-stream.h"
 #include <ns3/timer.h>
 
 #define INITIAL_Te_VALUE 0.05
@@ -134,24 +135,42 @@ public:
 	static const double ALPHA;
 	static const double BETA;
 	static const double GAMMA;
-	static const double XCP_MAX_INTERVAL;
 	static const double XCP_MIN_INTERVAL;
-	Time m_Te;
-	Time m_Tq;
-	Time m_Tr;
-	Time m_avg_rtt;
-	Time m_high_rtt;
-	Time m_effective_rtt;
-	Ptr<Timer> m_queue_timer;
-	Ptr<Timer> m_estimation_control_timer;
-	Ptr<Timer> m_rtt_timer;
-	double m_input_traffic_bytes;
-	double m_sum_rtt_by_throughput;
-	double m_sum_inv_throughput;
-	unsigned int m_num_cc_packets_in_Te;
-	void Tq_timeout();
-	void Te_timeout();
-	void everyRTT();
+	static const double XCP_MAX_INTERVAL;
+
+	struct XcpState {
+		DataRate m_linkRate;
+		std::unordered_set<Ptr<RdmaQueuePair> > m_queue_pairs;
+
+		double m_avg_rtt;
+		double m_high_rtt;
+		double m_effective_rtt;
+		double m_input_traffic_bytes;
+		double m_sum_rtt_by_throughput;
+		double m_sum_inv_throughput;
+		Time m_Te;
+		Time m_Tq;
+		Time m_Tr;
+		Ptr<Timer> m_estimation_control_timer;
+		Ptr<Timer> m_queue_timer;
+		Ptr<Timer> m_rtt_timer;
+		uint32_t m_inst_queue;
+		uint32_t m_queue_bytes;
+		uint32_t m_running_min_queue;
+		double m_exp_packets_ci;
+		double m_residue_pos_fbk;
+		double m_residue_neg_fbk;
+		double m_Cp;
+		double m_Cn;
+
+		XcpState(const DataRate &linkRate);
+
+		void Tq_timeout();
+		void Te_timeout();
+		void everyRTT();
+	};
+	std::unordered_map<Ptr<RdmaQueuePair>, XcpState> m_xcpStateMap;
+
 	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 	void UpdateRateXcpintTest(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);

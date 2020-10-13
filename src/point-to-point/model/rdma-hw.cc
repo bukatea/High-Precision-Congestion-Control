@@ -15,320 +15,296 @@
 
 namespace ns3{
 
-TypeId RdmaHw::GetTypeId (void)
-{
-	static TypeId tid = TypeId ("ns3::RdmaHw")
+	TypeId RdmaHw::GetTypeId (void)
+	{
+		static TypeId tid = TypeId ("ns3::RdmaHw")
 		.SetParent<Object> ()
 		.AddAttribute("MinRate",
-				"Minimum rate of a throttled flow",
-				DataRateValue(DataRate("100Mb/s")),
-				MakeDataRateAccessor(&RdmaHw::m_minRate),
-				MakeDataRateChecker())
+			"Minimum rate of a throttled flow",
+			DataRateValue(DataRate("100Mb/s")),
+			MakeDataRateAccessor(&RdmaHw::m_minRate),
+			MakeDataRateChecker())
 		.AddAttribute("Mtu",
-				"Mtu.",
-				UintegerValue(1000),
-				MakeUintegerAccessor(&RdmaHw::m_mtu),
-				MakeUintegerChecker<uint32_t>())
+			"Mtu.",
+			UintegerValue(1000),
+			MakeUintegerAccessor(&RdmaHw::m_mtu),
+			MakeUintegerChecker<uint32_t>())
 		.AddAttribute ("CcMode",
-				"which mode of DCQCN is running",
-				UintegerValue(0),
-				MakeUintegerAccessor(&RdmaHw::m_cc_mode),
-				MakeUintegerChecker<uint32_t>())
+			"which mode of DCQCN is running",
+			UintegerValue(0),
+			MakeUintegerAccessor(&RdmaHw::m_cc_mode),
+			MakeUintegerChecker<uint32_t>())
 		.AddAttribute("NACK Generation Interval",
-				"The NACK Generation interval",
-				DoubleValue(500.0),
-				MakeDoubleAccessor(&RdmaHw::m_nack_interval),
-				MakeDoubleChecker<double>())
+			"The NACK Generation interval",
+			DoubleValue(500.0),
+			MakeDoubleAccessor(&RdmaHw::m_nack_interval),
+			MakeDoubleChecker<double>())
 		.AddAttribute("L2ChunkSize",
-				"Layer 2 chunk size. Disable chunk mode if equals to 0.",
-				UintegerValue(0),
-				MakeUintegerAccessor(&RdmaHw::m_chunk),
-				MakeUintegerChecker<uint32_t>())
+			"Layer 2 chunk size. Disable chunk mode if equals to 0.",
+			UintegerValue(0),
+			MakeUintegerAccessor(&RdmaHw::m_chunk),
+			MakeUintegerChecker<uint32_t>())
 		.AddAttribute("L2AckInterval",
-				"Layer 2 Ack intervals. Disable ack if equals to 0.",
-				UintegerValue(0),
-				MakeUintegerAccessor(&RdmaHw::m_ack_interval),
-				MakeUintegerChecker<uint32_t>())
+			"Layer 2 Ack intervals. Disable ack if equals to 0.",
+			UintegerValue(0),
+			MakeUintegerAccessor(&RdmaHw::m_ack_interval),
+			MakeUintegerChecker<uint32_t>())
 		.AddAttribute("L2BackToZero",
-				"Layer 2 go back to zero transmission.",
-				BooleanValue(false),
-				MakeBooleanAccessor(&RdmaHw::m_backto0),
-				MakeBooleanChecker())
+			"Layer 2 go back to zero transmission.",
+			BooleanValue(false),
+			MakeBooleanAccessor(&RdmaHw::m_backto0),
+			MakeBooleanChecker())
 		.AddAttribute("EwmaGain",
-				"Control gain parameter which determines the level of rate decrease",
-				DoubleValue(1.0 / 16),
-				MakeDoubleAccessor(&RdmaHw::m_g),
-				MakeDoubleChecker<double>())
+			"Control gain parameter which determines the level of rate decrease",
+			DoubleValue(1.0 / 16),
+			MakeDoubleAccessor(&RdmaHw::m_g),
+			MakeDoubleChecker<double>())
 		.AddAttribute ("RateOnFirstCnp",
-				"the fraction of rate on first CNP",
-				DoubleValue(1.0),
-				MakeDoubleAccessor(&RdmaHw::m_rateOnFirstCNP),
-				MakeDoubleChecker<double> ())
+			"the fraction of rate on first CNP",
+			DoubleValue(1.0),
+			MakeDoubleAccessor(&RdmaHw::m_rateOnFirstCNP),
+			MakeDoubleChecker<double> ())
 		.AddAttribute("ClampTargetRate",
-				"Clamp target rate.",
-				BooleanValue(false),
-				MakeBooleanAccessor(&RdmaHw::m_EcnClampTgtRate),
-				MakeBooleanChecker())
+			"Clamp target rate.",
+			BooleanValue(false),
+			MakeBooleanAccessor(&RdmaHw::m_EcnClampTgtRate),
+			MakeBooleanChecker())
 		.AddAttribute("RPTimer",
-				"The rate increase timer at RP in microseconds",
-				DoubleValue(1500.0),
-				MakeDoubleAccessor(&RdmaHw::m_rpgTimeReset),
-				MakeDoubleChecker<double>())
+			"The rate increase timer at RP in microseconds",
+			DoubleValue(1500.0),
+			MakeDoubleAccessor(&RdmaHw::m_rpgTimeReset),
+			MakeDoubleChecker<double>())
 		.AddAttribute("RateDecreaseInterval",
-				"The interval of rate decrease check",
-				DoubleValue(4.0),
-				MakeDoubleAccessor(&RdmaHw::m_rateDecreaseInterval),
-				MakeDoubleChecker<double>())
+			"The interval of rate decrease check",
+			DoubleValue(4.0),
+			MakeDoubleAccessor(&RdmaHw::m_rateDecreaseInterval),
+			MakeDoubleChecker<double>())
 		.AddAttribute("FastRecoveryTimes",
-				"The rate increase timer at RP",
-				UintegerValue(5),
-				MakeUintegerAccessor(&RdmaHw::m_rpgThreshold),
-				MakeUintegerChecker<uint32_t>())
+			"The rate increase timer at RP",
+			UintegerValue(5),
+			MakeUintegerAccessor(&RdmaHw::m_rpgThreshold),
+			MakeUintegerChecker<uint32_t>())
 		.AddAttribute("AlphaResumInterval",
-				"The interval of resuming alpha",
-				DoubleValue(55.0),
-				MakeDoubleAccessor(&RdmaHw::m_alpha_resume_interval),
-				MakeDoubleChecker<double>())
+			"The interval of resuming alpha",
+			DoubleValue(55.0),
+			MakeDoubleAccessor(&RdmaHw::m_alpha_resume_interval),
+			MakeDoubleChecker<double>())
 		.AddAttribute("RateAI",
-				"Rate increment unit in AI period",
-				DataRateValue(DataRate("5Mb/s")),
-				MakeDataRateAccessor(&RdmaHw::m_rai),
-				MakeDataRateChecker())
+			"Rate increment unit in AI period",
+			DataRateValue(DataRate("5Mb/s")),
+			MakeDataRateAccessor(&RdmaHw::m_rai),
+			MakeDataRateChecker())
 		.AddAttribute("RateHAI",
-				"Rate increment unit in hyperactive AI period",
-				DataRateValue(DataRate("50Mb/s")),
-				MakeDataRateAccessor(&RdmaHw::m_rhai),
-				MakeDataRateChecker())
+			"Rate increment unit in hyperactive AI period",
+			DataRateValue(DataRate("50Mb/s")),
+			MakeDataRateAccessor(&RdmaHw::m_rhai),
+			MakeDataRateChecker())
 		.AddAttribute("VarWin",
-				"Use variable window size or not",
-				BooleanValue(false),
-				MakeBooleanAccessor(&RdmaHw::m_var_win),
-				MakeBooleanChecker())
+			"Use variable window size or not",
+			BooleanValue(false),
+			MakeBooleanAccessor(&RdmaHw::m_var_win),
+			MakeBooleanChecker())
 		.AddAttribute("FastReact",
-				"Fast React to congestion feedback",
-				BooleanValue(true),
-				MakeBooleanAccessor(&RdmaHw::m_fast_react),
-				MakeBooleanChecker())
+			"Fast React to congestion feedback",
+			BooleanValue(true),
+			MakeBooleanAccessor(&RdmaHw::m_fast_react),
+			MakeBooleanChecker())
 		.AddAttribute("MiThresh",
-				"Threshold of number of consecutive AI before MI",
-				UintegerValue(5),
-				MakeUintegerAccessor(&RdmaHw::m_miThresh),
-				MakeUintegerChecker<uint32_t>())
+			"Threshold of number of consecutive AI before MI",
+			UintegerValue(5),
+			MakeUintegerAccessor(&RdmaHw::m_miThresh),
+			MakeUintegerChecker<uint32_t>())
 		.AddAttribute("TargetUtil",
-				"The Target Utilization of the bottleneck bandwidth, by default 95%",
-				DoubleValue(0.95),
-				MakeDoubleAccessor(&RdmaHw::m_targetUtil),
-				MakeDoubleChecker<double>())
+			"The Target Utilization of the bottleneck bandwidth, by default 95%",
+			DoubleValue(0.95),
+			MakeDoubleAccessor(&RdmaHw::m_targetUtil),
+			MakeDoubleChecker<double>())
 		.AddAttribute("UtilHigh",
-				"The upper bound of Target Utilization of the bottleneck bandwidth, by default 98%",
-				DoubleValue(0.98),
-				MakeDoubleAccessor(&RdmaHw::m_utilHigh),
-				MakeDoubleChecker<double>())
+			"The upper bound of Target Utilization of the bottleneck bandwidth, by default 98%",
+			DoubleValue(0.98),
+			MakeDoubleAccessor(&RdmaHw::m_utilHigh),
+			MakeDoubleChecker<double>())
 		.AddAttribute("RateBound",
-				"Bound packet sending by rate, for test only",
-				BooleanValue(true),
-				MakeBooleanAccessor(&RdmaHw::m_rateBound),
-				MakeBooleanChecker())
+			"Bound packet sending by rate, for test only",
+			BooleanValue(true),
+			MakeBooleanAccessor(&RdmaHw::m_rateBound),
+			MakeBooleanChecker())
 		.AddAttribute("MultiRate",
-				"Maintain multiple rates in HPCC",
-				BooleanValue(true),
-				MakeBooleanAccessor(&RdmaHw::m_multipleRate),
-				MakeBooleanChecker())
+			"Maintain multiple rates in HPCC",
+			BooleanValue(true),
+			MakeBooleanAccessor(&RdmaHw::m_multipleRate),
+			MakeBooleanChecker())
 		.AddAttribute("SampleFeedback",
-				"Whether sample feedback or not",
-				BooleanValue(false),
-				MakeBooleanAccessor(&RdmaHw::m_sampleFeedback),
-				MakeBooleanChecker())
+			"Whether sample feedback or not",
+			BooleanValue(false),
+			MakeBooleanAccessor(&RdmaHw::m_sampleFeedback),
+			MakeBooleanChecker())
 		.AddAttribute("TimelyAlpha",
-				"Alpha of TIMELY",
-				DoubleValue(0.875),
-				MakeDoubleAccessor(&RdmaHw::m_tmly_alpha),
-				MakeDoubleChecker<double>())
+			"Alpha of TIMELY",
+			DoubleValue(0.875),
+			MakeDoubleAccessor(&RdmaHw::m_tmly_alpha),
+			MakeDoubleChecker<double>())
 		.AddAttribute("TimelyBeta",
-				"Beta of TIMELY",
-				DoubleValue(0.8),
-				MakeDoubleAccessor(&RdmaHw::m_tmly_beta),
-				MakeDoubleChecker<double>())
+			"Beta of TIMELY",
+			DoubleValue(0.8),
+			MakeDoubleAccessor(&RdmaHw::m_tmly_beta),
+			MakeDoubleChecker<double>())
 		.AddAttribute("TimelyTLow",
-				"TLow of TIMELY (ns)",
-				UintegerValue(50000),
-				MakeUintegerAccessor(&RdmaHw::m_tmly_TLow),
-				MakeUintegerChecker<uint64_t>())
+			"TLow of TIMELY (ns)",
+			UintegerValue(50000),
+			MakeUintegerAccessor(&RdmaHw::m_tmly_TLow),
+			MakeUintegerChecker<uint64_t>())
 		.AddAttribute("TimelyTHigh",
-				"THigh of TIMELY (ns)",
-				UintegerValue(500000),
-				MakeUintegerAccessor(&RdmaHw::m_tmly_THigh),
-				MakeUintegerChecker<uint64_t>())
+			"THigh of TIMELY (ns)",
+			UintegerValue(500000),
+			MakeUintegerAccessor(&RdmaHw::m_tmly_THigh),
+			MakeUintegerChecker<uint64_t>())
 		.AddAttribute("TimelyMinRtt",
-				"MinRtt of TIMELY (ns)",
-				UintegerValue(20000),
-				MakeUintegerAccessor(&RdmaHw::m_tmly_minRtt),
-				MakeUintegerChecker<uint64_t>())
+			"MinRtt of TIMELY (ns)",
+			UintegerValue(20000),
+			MakeUintegerAccessor(&RdmaHw::m_tmly_minRtt),
+			MakeUintegerChecker<uint64_t>())
 		.AddAttribute("DctcpRateAI",
-				"DCTCP's Rate increment unit in AI period",
-				DataRateValue(DataRate("1000Mb/s")),
-				MakeDataRateAccessor(&RdmaHw::m_dctcp_rai),
-				MakeDataRateChecker())
+			"DCTCP's Rate increment unit in AI period",
+			DataRateValue(DataRate("1000Mb/s")),
+			MakeDataRateAccessor(&RdmaHw::m_dctcp_rai),
+			MakeDataRateChecker())
 		;
-	return tid;
-}
-
-RdmaHw::RdmaHw() : m_avg_rtt(INITIAL_Te_VALUE), m_Te(Seconds(INITIAL_Te_VALUE)), m_Tq(Seconds(INITIAL_Te_VALUE)), m_Tr(0.1), m_input_traffic_bytes(0), m_num_cc_packets_in_Te(0), m_sum_inv_throughput(0), m_sum_rtt_by_throughput(0) {
-	if (IntHeader::mode == 20) {
-		Ptr<NormalRandomVariable> x = CreateObject<NormalRandomVariable>();
-
-		x->SetAttribute("Mean", DoubleValue(m_Tq));
-		x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Tq, 2));
-		m_queue_timer = CreateObject<Timer>();
-		m_queue_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
-		m_queue_timer->SetFunction(MakeCallback(&RdmaHw::Tq_timeout, this));
-		// this is assuming that it schedules to be started when the whole simulation starts
-		m_queue_timer->Schedule();
-
-		x->SetAttribute("Mean", DoubleValue(m_Te));
-		x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Te, 2));
-		m_estimation_control_timer = CreateObject<Timer>();
-		m_estimation_control_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
-		m_estimation_control_timer->SetFunction(MakeCallback(&RdmaHw::Te_timeout, this));
-		m_estimation_control_timer->Schedule();
-
-		x->SetAttribute("Mean", DoubleValue(m_Tr));
-		x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Tr, 2));
-		m_rtt_timer = CreateObject<Timer>();
-		m_rtt_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
-		m_rtt_timer->SetFunction(MakeCallback(&RdmaHw::everyRTT, this));
-		m_rtt_timer->Schedule();
+		return tid;
 	}
-}
 
-void RdmaHw::SetNode(Ptr<Node> node){
-	m_node = node;
-}
-void RdmaHw::Setup(QpCompleteCallback cb){
-	for (uint32_t i = 0; i < m_nic.size(); i++){
-		Ptr<QbbNetDevice> dev = m_nic[i].dev;
-		if (dev == NULL)
-			continue;
+	RdmaHw::RdmaHw() {}
+
+	void RdmaHw::SetNode(Ptr<Node> node){
+		m_node = node;
+	}
+	void RdmaHw::Setup(QpCompleteCallback cb){
+		for (uint32_t i = 0; i < m_nic.size(); i++){
+			Ptr<QbbNetDevice> dev = m_nic[i].dev;
+			if (dev == NULL)
+				continue;
 		// share data with NIC
-		dev->m_rdmaEQ->m_qpGrp = m_nic[i].qpGrp;
+			dev->m_rdmaEQ->m_qpGrp = m_nic[i].qpGrp;
 		// setup callback
-		dev->m_rdmaReceiveCb = MakeCallback(&RdmaHw::Receive, this);
-		dev->m_rdmaLinkDownCb = MakeCallback(&RdmaHw::SetLinkDown, this);
-		dev->m_rdmaPktSent = MakeCallback(&RdmaHw::PktSent, this);
+			dev->m_rdmaReceiveCb = MakeCallback(&RdmaHw::Receive, this);
+			dev->m_rdmaLinkDownCb = MakeCallback(&RdmaHw::SetLinkDown, this);
+			dev->m_rdmaPktSent = MakeCallback(&RdmaHw::PktSent, this);
 		// config NIC
-		dev->m_rdmaEQ->m_mtu = m_mtu;
-		dev->m_rdmaEQ->m_rdmaGetNxtPkt = MakeCallback(&RdmaHw::GetNxtPacket, this);
-	}
+			dev->m_rdmaEQ->m_mtu = m_mtu;
+			dev->m_rdmaEQ->m_rdmaGetNxtPkt = MakeCallback(&RdmaHw::GetNxtPacket, this);
+		}
 	// setup qp complete callback
-	m_qpCompleteCallback = cb;
-}
-
-uint32_t RdmaHw::GetNicIdxOfQp(Ptr<RdmaQueuePair> qp){
-	auto &v = m_rtTable[qp->dip.Get()];
-	if (v.size() > 0){
-		return v[qp->GetHash() % v.size()];
-	}else{
-		NS_ASSERT_MSG(false, "We assume at least one NIC is alive");
+		m_qpCompleteCallback = cb;
 	}
-}
-uint64_t RdmaHw::GetQpKey(uint16_t sport, uint16_t pg){
-	return ((uint64_t)sport << 16) | (uint64_t)pg;
-}
-Ptr<RdmaQueuePair> RdmaHw::GetQp(uint16_t sport, uint16_t pg){
-	uint64_t key = GetQpKey(sport, pg);
-	auto it = m_qpMap.find(key);
-	if (it != m_qpMap.end())
-		return it->second;
-	return NULL;
-}
-void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Address dip, uint16_t sport, uint16_t dport, uint32_t win, uint64_t baseRtt){
+
+	uint32_t RdmaHw::GetNicIdxOfQp(Ptr<RdmaQueuePair> qp){
+		auto &v = m_rtTable[qp->dip.Get()];
+		if (v.size() > 0){
+			return v[qp->GetHash() % v.size()];
+		}else{
+			NS_ASSERT_MSG(false, "We assume at least one NIC is alive");
+		}
+	}
+	uint64_t RdmaHw::GetQpKey(uint16_t sport, uint16_t pg){
+		return ((uint64_t)sport << 16) | (uint64_t)pg;
+	}
+	Ptr<RdmaQueuePair> RdmaHw::GetQp(uint16_t sport, uint16_t pg){
+		uint64_t key = GetQpKey(sport, pg);
+		auto it = m_qpMap.find(key);
+		if (it != m_qpMap.end())
+			return it->second;
+		return NULL;
+	}
+	void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Address dip, uint16_t sport, uint16_t dport, uint32_t win, uint64_t baseRtt){
 	// create qp
-	Ptr<RdmaQueuePair> qp = CreateObject<RdmaQueuePair>(pg, sip, dip, sport, dport);
-	qp->SetSize(size);
-	qp->SetWin(win);
-	qp->SetBaseRtt(baseRtt);
-	qp->SetVarWin(m_var_win);
+		Ptr<RdmaQueuePair> qp = CreateObject<RdmaQueuePair>(pg, sip, dip, sport, dport);
+		qp->SetSize(size);
+		qp->SetWin(win);
+		qp->SetBaseRtt(baseRtt);
+		qp->SetVarWin(m_var_win);
 
 	// add qp
-	uint32_t nic_idx = GetNicIdxOfQp(qp);
-	m_nic[nic_idx].qpGrp->AddQp(qp);
-	uint64_t key = GetQpKey(sport, pg);
-	m_qpMap[key] = qp;
+		uint32_t nic_idx = GetNicIdxOfQp(qp);
+		m_nic[nic_idx].qpGrp->AddQp(qp);
+		uint64_t key = GetQpKey(sport, pg);
+		m_qpMap[key] = qp;
 
 	// set init variables
-	DataRate m_bps = m_nic[nic_idx].dev->GetDataRate();
-	qp->m_rate = m_bps;
-	qp->m_max_rate = m_bps;
-	if (m_cc_mode == 1){
-		qp->mlx.m_targetRate = m_bps;
-	}else if (m_cc_mode == 3){
-		qp->hp.m_curRate = m_bps;
-		if (m_multipleRate){
-			for (uint32_t i = 0; i < IntHeader::maxHop; i++)
-				qp->hp.hopState[i].Rc = m_bps;
+		DataRate m_bps = m_nic[nic_idx].dev->GetDataRate();
+		qp->m_rate = m_bps;
+		qp->m_max_rate = m_bps;
+		if (m_cc_mode == 1){
+			qp->mlx.m_targetRate = m_bps;
+		}else if (m_cc_mode == 3){
+			qp->hp.m_curRate = m_bps;
+			if (m_multipleRate){
+				for (uint32_t i = 0; i < IntHeader::maxHop; i++)
+					qp->hp.hopState[i].Rc = m_bps;
+			}
+		}else if (m_cc_mode == 7){
+			qp->tmly.m_curRate = m_bps;
+		} else if (m_cc_mode == 20) {
+			qp->xcpint.m_curRate = m_bps;
+
+			m_xcpStateMap.emplace(std::piecewise_construct, std::forward_as_tuple(qp), std::forward_as_tuple(m_bps));
+			m_xcpStateMap[qp].m_queue_pairs.insert(qp);
 		}
-	}else if (m_cc_mode == 7){
-		qp->tmly.m_curRate = m_bps;
-	} else if (m_cc_mode == 20) {
-		qp->xcpint.m_curRate = m_bps;
-		qp->xcpint.m_delta_throughput = m_bps.GetBitRate();
-	}
 
 	// Notify Nic
-	m_nic[nic_idx].dev->NewQp(qp);
-}
+		m_nic[nic_idx].dev->NewQp(qp);
+	}
 
-Ptr<RdmaRxQueuePair> RdmaHw::GetRxQp(uint32_t sip, uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg, bool create){
-	uint64_t key = ((uint64_t)dip << 32) | ((uint64_t)pg << 16) | (uint64_t)dport;
-	auto it = m_rxQpMap.find(key);
-	if (it != m_rxQpMap.end())
-		return it->second;
-	if (create){
+	Ptr<RdmaRxQueuePair> RdmaHw::GetRxQp(uint32_t sip, uint32_t dip, uint16_t sport, uint16_t dport, uint16_t pg, bool create){
+		uint64_t key = ((uint64_t)dip << 32) | ((uint64_t)pg << 16) | (uint64_t)dport;
+		auto it = m_rxQpMap.find(key);
+		if (it != m_rxQpMap.end())
+			return it->second;
+		if (create){
 		// create new rx qp
-		Ptr<RdmaRxQueuePair> q = CreateObject<RdmaRxQueuePair>();
+			Ptr<RdmaRxQueuePair> q = CreateObject<RdmaRxQueuePair>();
 		// init the qp
-		q->sip = sip;
-		q->dip = dip;
-		q->sport = sport;
-		q->dport = dport;
-		q->m_ecn_source.qIndex = pg;
+			q->sip = sip;
+			q->dip = dip;
+			q->sport = sport;
+			q->dport = dport;
+			q->m_ecn_source.qIndex = pg;
 		// store in map
-		m_rxQpMap[key] = q;
-		return q;
+			m_rxQpMap[key] = q;
+			return q;
+		}
+		return NULL;
 	}
-	return NULL;
-}
-uint32_t RdmaHw::GetNicIdxOfRxQp(Ptr<RdmaRxQueuePair> q){
-	auto &v = m_rtTable[q->dip];
-	if (v.size() > 0){
-		return v[q->GetHash() % v.size()];
-	}else{
-		NS_ASSERT_MSG(false, "We assume at least one NIC is alive");
+	uint32_t RdmaHw::GetNicIdxOfRxQp(Ptr<RdmaRxQueuePair> q){
+		auto &v = m_rtTable[q->dip];
+		if (v.size() > 0){
+			return v[q->GetHash() % v.size()];
+		}else{
+			NS_ASSERT_MSG(false, "We assume at least one NIC is alive");
+		}
 	}
-}
 
-int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
-	uint8_t ecnbits = ch.GetIpv4EcnBits();
+	int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
+		uint8_t ecnbits = ch.GetIpv4EcnBits();
 
-	uint32_t payload_size = p->GetSize() - ch.GetSerializedSize();
+		uint32_t payload_size = p->GetSize() - ch.GetSerializedSize();
 
-	// TODO find corresponding rx queue pair
-	Ptr<RdmaRxQueuePair> rxQp = GetRxQp(ch.dip, ch.sip, ch.udp.dport, ch.udp.sport, ch.udp.pg, true);
-	if (ecnbits != 0){
-		rxQp->m_ecn_source.ecnbits |= ecnbits;
-		rxQp->m_ecn_source.qfb++;
-	}
-	rxQp->m_ecn_source.total++;
-	rxQp->m_milestone_rx = m_ack_interval;
+		// TODO find corresponding rx queue pair
+		Ptr<RdmaRxQueuePair> rxQp = GetRxQp(ch.dip, ch.sip, ch.udp.dport, ch.udp.sport, ch.udp.pg, true);
+		if (ecnbits != 0){
+			rxQp->m_ecn_source.ecnbits |= ecnbits;
+			rxQp->m_ecn_source.qfb++;
+		}
+		rxQp->m_ecn_source.total++;
+		rxQp->m_milestone_rx = m_ack_interval;
 
-	int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size);
+		int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size);
 	if (x == 1 || x == 2){ //generate ACK or NACK
 		qbbHeader seqh;
 		seqh.SetSeq(rxQp->ReceiverNextExpectedSeq);
 		seqh.SetPG(ch.udp.pg);
 		seqh.SetSport(ch.udp.dport);
 		seqh.SetDport(ch.udp.sport);
-		seqh.SetXCP(ch.udp.concflows_inc, ch.udp.xcpId, ch.udp.controlling_hop);
+		seqh.SetXCP(ch.udp.concflows_inc, ch.udp.reverse_concflows_inc_sum, ch.udp.xcpId);
 		seqh.SetIntHeader(ch.udp.ih);
 		if (ecnbits)
 			seqh.SetCnp();
@@ -442,7 +418,7 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 	}else if (m_cc_mode == 8){
 		HandleAckDctcp(qp, p, ch);
 	} else if (m_cc_mode == 20)
-		HandleAckXcpint(qp, p, ch);
+	HandleAckXcpint(qp, p, ch);
 	// ACK may advance the on-the-fly window, allowing more packets to send
 	dev->TriggerTransmit();
 	return 0;
@@ -483,7 +459,7 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
 			}
 			return 2;
 		}else
-			return 4;
+		return 4;
 	}else {
 		// Duplicate. 
 		return 3;
@@ -513,6 +489,8 @@ void RdmaHw::QpComplete(Ptr<RdmaQueuePair> qp){
 		Simulator::Cancel(qp->mlx.m_eventUpdateAlpha);
 		Simulator::Cancel(qp->mlx.m_eventDecreaseRate);
 		Simulator::Cancel(qp->mlx.m_rpTimer);
+	} else {
+		m_xcpStateMap[qp].m_queue_pairs.erase(m_xcpStateMap[qp].m_queue_pairs.find(qp));
 	}
 	m_qpCompleteCallback(qp);
 }
@@ -559,7 +537,8 @@ Ptr<Packet> RdmaHw::GetNxtPacket(Ptr<RdmaQueuePair> qp){
 	seqTs.SetPG (qp->m_pg);
 	if (IntHeader::mode == 20) {
 		seqTs.hdr_xcp.m_xcpId = qp->sip.Get();
-		seqTs.hdr_xcp.m_concflows_inc = 1 / qp->xcpint.m_exp_packets_ci;
+		seqTs.hdr_xcp.m_concflows_inc = 1.0 / qp->xcpint.m_exp_packets_ci;
+		seqTs.hdr_xcp.m_reverse_concflows_inc_sum = 0;
 		// TODO extra send logic?
 	}
 	p->AddHeader (seqTs);
@@ -928,217 +907,223 @@ void RdmaHw::FastReactHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch)
 /***********************
  * XCP-INT
  ***********************/
-const double RdmaHw::ALPHA = 0.4;
-const double RdmaHw::BETA = 0.226;
-const double RdmaHw::GAMMA = 0.1;
 const double RdmaHw::XCP_MAX_INTERVAL = 1;
+const double RdmaQueuePair::ALPHA = 0.4;
+const double RdmaQueuePair::BETA = 0.226;
+const double RdmaQueuePair::GAMMA = 0.1;
 const double RdmaHw::XCP_MIN_INTERVAL = 0.001;
 
-void Tq_timeout() {
+void RdmaHw::XcpState::XcpState(const DataRate &linkRate) {
+	m_linkRate = linkRate;
 
+	m_effective_rtt = 0;
+	m_input_traffic_bytes = 0;
+	m_sum_inv_throughput = 0;
+	m_sum_rtt_by_throughput = 0;
+	m_Te = Seconds(INITIAL_Te_VALUE);
+	m_Tq = Seconds(INITIAL_Te_VALUE);
+	m_Tr = Seconds(0.1);
+	m_inst_queue = 0;
+	m_running_min_queue = 0;
+	m_queue_bytes = 0;
+	m_exp_packets_ci = 0;
+	m_residue_pos_fbk = 0.0;
+	m_residue_neg_fbk = 0.0;
+	m_Cp = 0;
+	m_Cn = 0;
+
+	Ptr<NormalRandomVariable> x = CreateObject<NormalRandomVariable>();
+	x->SetAttribute("Mean", DoubleValue(m_Te.GetSeconds()));
+	x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Te.GetSeconds(), 2)));
+	m_estimation_control_timer = CreateObject<Timer>();
+	m_estimation_control_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
+	m_estimation_control_timer->SetFunction(MakeCallback(&RdmaHw::XcpState::Te_timeout, this));
+	// this is assuming that it schedules to be started when the whole simulation starts
+	m_estimation_control_timer->Schedule();
+
+	x->SetAttribute("Mean", DoubleValue(m_Tq.GetSeconds()));
+	x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Tq.GetSeconds(), 2)));
+	m_queue_timer = CreateObject<Timer>();
+	m_queue_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
+	m_queue_timer->SetFunction(MakeCallback(&RdmaHw::XcpState::Tq_timeout, this));
+	m_queue_timer->Schedule();
+
+	x->SetAttribute("Mean", DoubleValue(m_Tr.GetSeconds()));
+	x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Tr.GetSeconds(), 2)));
+	m_rtt_timer = CreateObject<Timer>();
+	m_rtt_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
+	m_rtt_timer->SetFunction(MakeCallback(&RdmaHw::XcpState::everyRTT, this));
+	m_rtt_timer->Schedule();
 }
 
-void Te_timeout() {
+void RdmaHw::XcpState::Te_timeout() {
+	double input_bw = m_input_traffic_bytes / m_Te.GetSeconds();
+	double phi_bps = 0.0;
+	double shuffled_traffic_bps = 0.0;
 
+	/*
+	if (m_sum_inv_throughput != 0.0) {
+		m_avg_rtt = m_sum_rtt_by_throughput / m_sum_inv_throughput;
+	} else {
+		m_avg_rtt = INITIAL_Te_VALUE;
+	}
+	*/
+	if (!m_queue_pairs.empty()) {
+		m_avg_rtt = std::accumulate(m_queue_pairs.begin(), m_queue_pairs.end(), 0.0, (const RdmaQueuePair &a, const RdmaQueuePair &b) {
+			return a.m_rtt_estimator.GetCurrentEstimate().GetSeconds() + b.m_rtt_estimator.GetCurrentEstimate().GetSeconds();
+		}) / m_queue_pairs.size();
+	} else {
+		m_avg_rtt = INITIAL_Te_VALUE;
+	}
+
+	if (m_input_traffic_bytes > 0) {
+		phi_bps = ALPHA * (m_linkRate.GetBitRate() / 8.0 - input_bw) - BETA * m_queue_bytes / m_avg_rtt;
+		shuffled_traffic_bps = GAMMA * input_bw;
+
+		if (shuffled_traffic_bps > std::abs(phi_bps))
+			shuffled_traffic_bps -= abs(phi_bps);
+		else
+			shuffled_traffic_bps = 0.0;
+	}
+
+	m_residue_pos_fbk = std::max(0.0, phi_bps) + shuffled_traffic_bps;
+	m_residue_neg_fbk = std::max(0.0, -phi_bps) + shuffled_traffic_bps;
+
+	if (m_sum_inv_throughput == 0.0)
+		m_sum_inv_throughput = 1.0;
+	if (m_input_traffic_bytes > 0) {
+		m_Cp = m_residue_pos_fbk / m_sum_inv_throughput;
+		m_Cn = m_residue_neg_fbk / m_input_traffic_bytes;
+	} else {
+		m_Cp = m_Cn = 0.0;
+	}
+
+	m_input_traffic_bytes = 0.0;
+	m_sum_inv_throughput = 0.0;
+	m_sum_rtt_by_throughput = 0.0;
+	m_Te = Seconds(std::max(m_avg_rtt, XCP_MIN_INTERVAL));
+	m_estimation_control_timer->SetDelay(m_Te);
+	m_estimation_control_timer->Schedule();
 }
 
-void everyRTT() {
-
+void RdmaHw::XcpState::Tq_timeout() {
+	m_queue_bytes = m_running_min_queue;
+	m_running_min_queue = m_inst_queue;
+	m_Tq = Seconds(std::max(0.002, (m_avg_rtt - m_inst_queue / (m_curRate.GetBitRate() / 8.0)) / 2.0));
+	m_queue_timer->SetDelay(m_Tq);
+	m_queue_timer->Schedule();
 }
 
+void RdmaHw::XcpState::everyRTT() {
+	if (m_effective_rtt != 0.0)
+		m_Tr = Seconds(m_effective_rtt);
+	else
+		if (m_high_rtt != 0.0)
+			m_Tr = Seconds(m_high_rtt);
+
+		m_queue_timer->SetDelay(m_Tr);
+		m_rtt_timer->Schedule();
+	}
+}
+
+// TODO: mark packet that is in new control interval, also before starting a new control interval, make sure to use flow sum
+// TODO: do more nuanced logic with all of the IntHops instead of looping and selecting the max or min
 void RdmaHw::HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
-	NS_LOG_FUNCTION(this << "Sender ID: " << ch.ack.xcpId << " Controlling Hop: " << ch.ack.controlling_hop);
+	NS_LOG_FUNCTION(this << "Sender ID: " << ch.ack.xcpId);
+
+	IntHeader &ih = ch.ack.ih;
+
+	// UPDATE RTT ESTIMATE=================================
+
+	qp->xcpint.m_rtt_estimator.Measurement(TimeStep(Simulator::Now().GetTimeStep() - ch.ack.ts));
+
+	// END UPDATE RTT ESTIMATE=============================
+
+	// RETRIEVE XCP INFORMATION============================
+
+	double num_active_flows = ch.ack.reverse_concflows_inc_sum;
+	m_inst_queue = ih.hop[]
+
+	// END RETRIEVE XCP INFORMATION========================
+
+	// XCP ROUTER STUFF====================================
+
+	NS_ASSERT(m_xcpStateMap.find(qp) != m_xcpStateMap.end());
+	XcpState &xcpState = m_xcpStateMap[qp];
 
 	double pkt_size = (double) p->GetSize();
-	m_input_traffic_bytes += pkt_size;
+	xcpState.m_input_traffic_bytes += pkt_size;
 
-        IntHeader &ih = ch.ack.ih;
-	++m_num_cc_packets_in_Te;
-
-	if (qp->xcpint.m_rtt != 0) {
-		m_sum_inv_throughput += qp->xcpint.m_x;
-		double y = 0;
-		if (qp->xcpint.m_rtt < XCP_MAX_INTERVAL)
-			y = qp->xcpint.m_rtt * qp->xcpint.m_x;
-		else
-			y = XCP_MAX_INTERVAL * qp->xcpint.m_x;
-		m_sum_rtt_by_throughput += y;
-	}
-	NS_ASSERT(qp->xcpint.m_lastUpdateSeq == qp->xcpint.m_rtt);
-
-	uint32_t ack_seq = ch.ack.seq;
-	// update rate
-	if (ack_seq > qp->hp.m_lastUpdateSeq){ // if full RTT feedback is ready, do full update
-		UpdateRateXcpint(qp, p, ch, false);
-	}else{ // do fast react
-		FastReactXcpint(qp, p, ch);
-	}
-}
-
-void RdmaHw::UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react){
 	uint32_t next_seq = qp->snd_nxt;
-	bool print = !fast_react || true;
-	if (qp->hp.m_lastUpdateSeq == 0){ // first RTT
-		qp->hp.m_lastUpdateSeq = next_seq;
-		// store INT
-		IntHeader &ih = ch.ack.ih;
+
+	if (qp->xcpint.m_lastUpdateSeq == 0){ // first RTT
+		qp->xcpint.m_lastUpdateSeq = next_seq;
+		NS_ASSERT(qp->xcpint.m_rtt_estimator.GetCurrentEstimate().GetSeconds() == 0);
+		// qp->xcp.m_curRate at max here
+
 		NS_ASSERT(ih.nhop <= IntHeader::maxHop);
 		for (uint32_t i = 0; i < ih.nhop; i++)
-			qp->hp.hop[i] = ih.hop[i];
-		#if PRINT_LOG
-		if (print){
-			printf("%lu %s %08x %08x %u %u [%u,%u,%u]", Simulator::Now().GetTimeStep(), fast_react? "fast" : "update", qp->sip.Get(), qp->dip.Get(), qp->sport, qp->dport, qp->hp.m_lastUpdateSeq, ch.ack.seq, next_seq);
-			for (uint32_t i = 0; i < ih.nhop; i++)
-				printf(" %u %lu %lu", ih.hop[i].GetQlen(), ih.hop[i].GetBytes(), ih.hop[i].GetTime());
-			printf("\n");
-		}
-		#endif
-	}else {
-		// check packet INT
-		IntHeader &ih = ch.ack.ih;
-		if (ih.nhop <= IntHeader::maxHop){
-			double max_c = 0;
-			bool inStable = false;
-			#if PRINT_LOG
-			if (print)
-				printf("%lu %s %08x %08x %u %u [%u,%u,%u]", Simulator::Now().GetTimeStep(), fast_react? "fast" : "update", qp->sip.Get(), qp->dip.Get(), qp->sport, qp->dport, qp->hp.m_lastUpdateSeq, ch.ack.seq, next_seq);
-			#endif
-			// check each hop
-			double U = 0;
-			uint64_t dt = 0;
-			bool updated[IntHeader::maxHop] = {false}, updated_any = false;
-			NS_ASSERT(ih.nhop <= IntHeader::maxHop);
-			for (uint32_t i = 0; i < ih.nhop; i++){
-				if (m_sampleFeedback){
-					if (ih.hop[i].GetQlen() == 0 and fast_react)
-						continue;
-				}
-				updated[i] = updated_any = true;
-				#if PRINT_LOG
-				if (print)
-					printf(" %u(%u) %lu(%lu) %lu(%lu)", ih.hop[i].GetQlen(), qp->hp.hop[i].GetQlen(), ih.hop[i].GetBytes(), qp->hp.hop[i].GetBytes(), ih.hop[i].GetTime(), qp->hp.hop[i].GetTime());
-				#endif
-				uint64_t tau = ih.hop[i].GetTimeDelta(qp->hp.hop[i]);;
-				double duration = tau * 1e-9;
-				double txRate = (ih.hop[i].GetBytesDelta(qp->hp.hop[i])) * 8 / duration;
-				double u = txRate / ih.hop[i].GetLineRate() + (double)std::min(ih.hop[i].GetQlen(), qp->hp.hop[i].GetQlen()) * qp->m_max_rate.GetBitRate() / ih.hop[i].GetLineRate() /qp->m_win;
-				#if PRINT_LOG
-				if (print)
-					printf(" %.3lf %.3lf", txRate, u);
-				#endif
-				if (!m_multipleRate){
-					// for aggregate (single R)
-					if (u > U){
-						U = u;
-						dt = tau;
-					}
-				}else {
-					// for per hop (per hop R)
-					if (tau > qp->m_baseRtt)
-						tau = qp->m_baseRtt;
-					qp->hp.hopState[i].u = (qp->hp.hopState[i].u * (qp->m_baseRtt - tau) + u * tau) / double(qp->m_baseRtt);
-				}
-				qp->hp.hop[i] = ih.hop[i];
-			}
+			qp->xcpint.hop[i] = ih.hop[i];
+		printf("%lu %08x %08x %u %u [%u,%u,%u]", Simulator::Now().GetTimeStep(), qp->sip.Get(), qp->dip.Get(), qp->sport, qp->dport, qp->xcpint.m_lastUpdateSeq, ch.ack.seq, next_seq);
+		for (uint32_t i = 0; i < ih.nhop; i++)
+			printf(" %u %lu %lu", ih.hop[i].GetQlen(), ih.hop[i].GetBytes(), ih.hop[i].GetTime());
+		printf("\n");
 
-			DataRate new_rate;
-			int32_t new_incStage;
-			DataRate new_rate_per_hop[IntHeader::maxHop];
-			int32_t new_incStage_per_hop[IntHeader::maxHop];
-			if (!m_multipleRate){
-				// for aggregate (single R)
-				if (updated_any){
-					if (dt > qp->m_baseRtt)
-						dt = qp->m_baseRtt;
-					qp->hp.u = (qp->hp.u * (qp->m_baseRtt - dt) + U * dt) / double(qp->m_baseRtt);
-					max_c = qp->hp.u / m_targetUtil;
+		// on arrival
 
-					if (max_c >= 1 || qp->hp.m_incStage >= m_miThresh){
-						new_rate = qp->hp.m_curRate / max_c + m_rai;
-						new_incStage = 0;
-					}else{
-						new_rate = qp->hp.m_curRate + m_rai;
-						new_incStage = qp->hp.m_incStage+1;
-					}
-					if (new_rate < m_minRate)
-						new_rate = m_minRate;
-					if (new_rate > qp->m_max_rate)
-						new_rate = qp->m_max_rate;
-					#if PRINT_LOG
-					if (print)
-						printf(" u=%.6lf U=%.3lf dt=%u max_c=%.3lf", qp->hp.u, U, dt, max_c);
-					#endif
-					#if PRINT_LOG
-					if (print)
-						printf(" rate:%.3lf->%.3lf\n", qp->hp.m_curRate.GetBitRate()*1e-9, new_rate.GetBitRate()*1e-9);
-					#endif
-				}
-			}else{
-				// for per hop (per hop R)
-				new_rate = qp->m_max_rate;
-				for (uint32_t i = 0; i < ih.nhop; i++){
-					if (updated[i]){
-						double c = qp->hp.hopState[i].u / m_targetUtil;
-						if (c >= 1 || qp->hp.hopState[i].incStage >= m_miThresh){
-							new_rate_per_hop[i] = qp->hp.hopState[i].Rc / c + m_rai;
-							new_incStage_per_hop[i] = 0;
-						}else{
-							new_rate_per_hop[i] = qp->hp.hopState[i].Rc + m_rai;
-							new_incStage_per_hop[i] = qp->hp.hopState[i].incStage+1;
-						}
-						// bound rate
-						if (new_rate_per_hop[i] < m_minRate)
-							new_rate_per_hop[i] = m_minRate;
-						if (new_rate_per_hop[i] > qp->m_max_rate)
-							new_rate_per_hop[i] = qp->m_max_rate;
-						// find min new_rate
-						if (new_rate_per_hop[i] < new_rate)
-							new_rate = new_rate_per_hop[i];
-						#if PRINT_LOG
-						if (print)
-							printf(" [%u]u=%.6lf c=%.3lf", i, qp->hp.hopState[i].u, c);
-						#endif
-						#if PRINT_LOG
-						if (print)
-							printf(" %.3lf->%.3lf", qp->hp.hopState[i].Rc.GetBitRate()*1e-9, new_rate.GetBitRate()*1e-9);
-						#endif
-					}else{
-						if (qp->hp.hopState[i].Rc < new_rate)
-							new_rate = qp->hp.hopState[i].Rc;
-					}
-				}
-				#if PRINT_LOG
-				printf("\n");
-				#endif
-			}
-			if (updated_any)
-				ChangeRate(qp, new_rate);
-			if (!fast_react){
-				if (updated_any){
-					qp->hp.m_curRate = new_rate;
-					qp->hp.m_incStage = new_incStage;
-				}
-				if (m_multipleRate){
-					// for per hop (per hop R)
-					for (uint32_t i = 0; i < ih.nhop; i++){
-						if (updated[i]){
-							qp->hp.hopState[i].Rc = new_rate_per_hop[i];
-							qp->hp.hopState[i].incStage = new_incStage_per_hop[i];
-						}
-					}
-				}
-			}
+		// before departure
+		qp->xcpint.m_delta_throughput = 0;
+		// return from router stuff here...
+	} else {
+		printf("%lu %08x %08x %u %u [%u,%u,%u]", Simulator::Now().GetTimeStep(), qp->sip.Get(), qp->dip.Get(), qp->sport, qp->dport, qp->xcpint.m_lastUpdateSeq, ch.ack.seq, next_seq);
+		// on arrival
+		double interpacket_time = pkt_size / (qp->xcpint.m_curRate.GetBitRate() / 8.0); // x in original papers
+		xcpState.m_sum_inv_throughput += interpacket_time;
+		double y = 0;
+		if (qp->xcpint.m_rtt_estimator.GetCurrentEstimate().GetSeconds() < XCP_MAX_INTERVAL)
+			y = qp->xcpint.m_rtt_estimator.GetCurrentEstimate().GetSeconds() * interpacket_time;
+		else
+			y = XCP_MAX_INTERVAL * interpacket_time;
+		xcpState.m_sum_rtt_by_throughput += y;
+
+		// before departure
+		double pos_fbk = xcpState.m_Cp * interpacket_time;
+		double neg_fbk = xcpState.m_Cn * pkt_size;
+
+		pos_fbk = std::min(xcpState.m_residue_pos_fbk, pos_fbk);
+		neg_fbk = std::min(xcpState.m_residue_neg_fbk, neg_fbk);
+
+		double feedback = pos_fbk - neg_fbk;
+
+		if (qp->xcpint.m_delta_throughput >= feedback) {
+			qp->xcpint.m_delta_throughput = feedback;
+		} else {
+			neg_fbk = std::min(xcpState.m_residue_neg_fbk, neg_fbk + (feedback - qp->xcpint.m_delta_throughput));
+			pos_fbk = qp->xcpint.m_delta_throughput + neg_fbk;
 		}
-		if (!fast_react){
-			if (next_seq > qp->hp.m_lastUpdateSeq)
-				qp->hp.m_lastUpdateSeq = next_seq; //+ rand() % 2 * m_mtu;
-		}
+
+		xcpState.m_residue_pos_fbk = std::max(0.0, xcpState.m_residue_pos_fbk - pos_fbk);
+		xcpState.m_residue_neg_fbk = std::max(0.0, xcpState.m_residue_neg_fbk - neg_fbk);
+
+		if (xcpState.m_residue_pos_fbk == 0.0)
+			xcpState.m_Cp = 0.0;
+		if (xcpState.m_residue_neg_fbk == 0.0)
+			xcpState.m_Cn = 0.0;
+
+
+		if (next_seq > qp->xcpint.m_lastUpdateSeq)
+			qp->xcpint.m_lastUpdateSeq = next_seq;
 	}
-}
 
-void RdmaHw::FastReactXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
-	if (m_fast_react)
-		UpdateRateXcpint(qp, p, ch, true);
+	// END XCP ROUTER STUFF====================================
+
+	// XCP END SYS STUFF===================================
+
+
+
+	// END XCP END SYS STUFF===================================
+
+	// min overwrite to m_running_min_queue and m_inst_queue
 }
 
 /**********************
@@ -1271,6 +1256,4 @@ void RdmaHw::HandleAckDctcp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &
 	// additive inc
 	if (qp->dctcp.m_caState == 0 && new_batch)
 		qp->m_rate = std::min(qp->m_max_rate, qp->m_rate + m_dctcp_rai);
-}
-
 }

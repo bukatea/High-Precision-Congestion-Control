@@ -69,9 +69,10 @@ private:
   uint16_t flags;
   uint16_t m_pg;
   uint32_t m_seq; // the qbb sequence number.
+  uint64_t ts;
   double concflows_inc;
+  double reverse_concflows_inc_sum;
   uint32_t xcpId;
-  uint32_t controlling_hop;
   IntHeader ih;
   
 };
