@@ -28,12 +28,11 @@ NS_LOG_COMPONENT_DEFINE ("SeqTsHeader");
 
 namespace ns3 {
 
-  NS_OBJECT_ENSURE_REGISTERED (SeqTsHeader);
+NS_OBJECT_ENSURE_REGISTERED (SeqTsHeader);
 
-  SeqTsHeader::SeqTsHeader ()
-  : m_seq (0)
-  {
-   if (IntHeader::mode == 1)
+SeqTsHeader::SeqTsHeader ()
+: m_seq (0) {
+  if (IntHeader::mode == 1)
     ih.ts = Simulator::Now().GetTimeStep();
   else (IntHeader::mode == 20)
     hdr_xcp.m_ts = Simulator::Now().GetTimeStep();

@@ -72,9 +72,9 @@ namespace ns3 {
     struct {
       uint64_t m_ts;
       double m_concflows_inc;
-    uint32_t m_xcpId; // for debugging
-  } hdr_xcp;
-};
+      uint32_t m_xcpId; // for debugging
+    } hdr_xcp;
+  };
 
 } // namespace ns3
 
