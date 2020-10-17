@@ -986,8 +986,8 @@ namespace ns3{
 					double num_active_flows;
 					std::memcpy(&num_active_flows, &raw_num_active_flows, sizeof(double));
 
-					double pos_fbk = residue_pos_fbk * qp->xcpint.packet_size / (qp->m_curRate.GetBitRate() / 8.0 * (num_active_flows - qp->xcpint.hopState[i].m_start_flow_sum) * std::min(qp->xcpint.m_rtt_estimator.GetCurrentEstimate().GetSeconds(), XCP_MAX_INTERVAL));
-					double neg_fbk = residue_neg_fbk * qp->xcpint.packet_size / rv;
+					double pos_fbk = residue_pos_fbk * qp->xcpint.m_packet_size / (qp->m_curRate.GetBitRate() / 8.0 * (num_active_flows - qp->xcpint.hopState[i].m_start_flow_sum) * std::min(qp->xcpint.m_rtt_estimator.GetCurrentEstimate().GetSeconds(), XCP_MAX_INTERVAL));
+					double neg_fbk = residue_neg_fbk * qp->xcpint.m_packet_size / rv;
 
 					min_feedback = std::min(min_feedback, pos_fbk - neg_fbk);
 

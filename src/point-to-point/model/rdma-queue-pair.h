@@ -10,6 +10,7 @@
 #include <ns3/int-header.h>
 #include <vector>
 #include <ns3/rtt-estimator.h>
+#include <boost/functional/hash.hpp>
 
 namespace ns3 {
 
@@ -61,7 +62,7 @@ namespace ns3 {
 	} hp;
 	struct {
 		Ptr<RttMeanDeviation> m_rtt_estimator;
-		uint32_t packet_size;
+		uint32_t m_packet_size;
 		uint32_t m_lastUpdateSeq;
 		DataRate m_curRate;
 		IntHop hop[IntHeader::maxHop];
@@ -148,6 +149,23 @@ public:
 	void Clear(void);
 };
 
+}
+
+namespace std {
+	template<>
+	struct hash<RdmaQueuePair> {
+		std::size_t operator()(const RdmaQueuePair& k) {
+			std::size_t seed = 0;
+
+			boost::hash_combine(seed, boost::hash_value(k.m_pg));
+			boost::hash_combine(seed, boost::hash_value(k.sip.Get()));
+			boost::hash_combine(seed, boost::hash_value(k.dip.Get()));
+			boost::hash_combine(seed, boost::hash_value(k.sport));
+			boost::hash_combine(seed, boost::hash_value(k.dport));
+
+			return seed;
+		}
+	}
 }
 
 #endif /* RDMA_QUEUE_PAIR_H */
