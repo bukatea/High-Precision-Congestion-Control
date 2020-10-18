@@ -34,7 +34,7 @@ SeqTsHeader::SeqTsHeader ()
 : m_seq (0) {
   if (IntHeader::mode == 1)
     ih.ts = Simulator::Now().GetTimeStep();
-  else (IntHeader::mode == 20)
+  else if (IntHeader::mode == 20)
     hdr_xcp.m_ts = Simulator::Now().GetTimeStep();
 }
 
@@ -68,7 +68,7 @@ SeqTsHeader::GetTs (void) const
   else if (IntHeader::mode == 20)
     return TimeStep(hdr_xcp.m_ts);
   NS_ASSERT_MSG(IntHeader::mode == 1 || IntHeader::mode == 20, "SeqTsHeader cannot GetTs when IntHeader::mode != 1");
-  return 0;
+  return Time();
 }
 
 TypeId

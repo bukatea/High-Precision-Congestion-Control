@@ -10,6 +10,7 @@
 #include "qbb-net-device.h"
 #include "ppp-header.h"
 #include "ns3/int-header.h"
+#include "ns3/seq-ts-header.h"
 
 namespace ns3 {
 
@@ -181,7 +182,6 @@ void SwitchNode::ClearTable(){
 
 // This function can only be called in switch mode
 bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch){
-	// hopefully protected doesn't mess with stuff here, if it does then just add a getter
 	m_rxBytes[DynamicCast<QbbNetDevice>(device)->m_ifIndex] += packet->GetSize();
 	SendToDev(packet, ch);
 	return true;

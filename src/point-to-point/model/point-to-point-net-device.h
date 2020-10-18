@@ -58,6 +58,7 @@ class ErrorModel;
 class PointToPointNetDevice : public NetDevice
 {
 public:
+  uint32_t m_ifIndex;
   static TypeId GetTypeId (void);
 
   /**
@@ -440,7 +441,6 @@ protected:
   Mac48Address m_address;
   NetDevice::ReceiveCallback m_rxCallback;
   NetDevice::PromiscReceiveCallback m_promiscCallback;
-  uint32_t m_ifIndex;
   bool m_linkUp;
   TracedCallback<> m_linkChangeCallbacks;
 

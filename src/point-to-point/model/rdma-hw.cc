@@ -246,8 +246,8 @@ namespace ns3{
 		} else if (m_cc_mode == 20) {
 			qp->xcpint.m_curRate = m_bps;
 
-			m_xcpStateMap.emplace(std::piecewise_construct, std::forward_as_tuple(qp), std::forward_as_tuple());
-			m_xcpStateMap[qp].m_queue_pairs.insert(qp);
+			m_xcpStateMap.emplace(std::piecewise_construct, std::forward_as_tuple(qp), std::forward_as_tuple(Ptr<RdmaHw>(this)));
+			m_xcpStateMap.at(qp).m_queue_pairs.insert(qp);
 		}
 
 	// Notify Nic
@@ -490,7 +490,7 @@ namespace ns3{
 			Simulator::Cancel(qp->mlx.m_eventDecreaseRate);
 			Simulator::Cancel(qp->mlx.m_rpTimer);
 		} else if (m_cc_mode == 20) {
-			m_xcpStateMap[qp].m_queue_pairs.erase(m_xcpStateMap[qp].m_queue_pairs.find(qp));
+			m_xcpStateMap.at(qp).m_queue_pairs.erase(m_xcpStateMap.at(qp).m_queue_pairs.find(qp));
 		}
 		m_qpCompleteCallback(qp);
 	}
@@ -531,6 +531,8 @@ namespace ns3{
 		if (m_mtu < payload_size)
 			payload_size = m_mtu;
 
+		Ptr<Packet> p = Create<Packet> (payload_size);
+
 		UdpHeader udpHeader;
 		udpHeader.SetDestinationPort (qp->dport);
 		udpHeader.SetSourcePort (qp->sport);
@@ -553,10 +555,9 @@ namespace ns3{
 		qp->xcpint.m_packet_size = payload_size + seqTs.GetSerializedSize() + udpHeader.GetSerializedSize() + ipHeader.GetSerializedSize() + ppp.GetSerializedSize();
 		if (IntHeader::mode == 20) {
 			seqTs.hdr_xcp.m_xcpId = qp->sip.Get();
-			seqTs.hdr_xcp.m_concflows_inc = 1.0 / (m_avg_rtt * qp->xcpint.m_curRate.GetBitRate() / 8.0 / qp->xcpint.m_packet_size);
+			seqTs.hdr_xcp.m_concflows_inc = 1.0 / (m_xcpStateMap.at(qp).m_avg_rtt * qp->xcpint.m_curRate.GetBitRate() / 8.0 / qp->xcpint.m_packet_size);
 		}
 
-		Ptr<Packet> p = Create<Packet> (payload_size);
 		// add SeqTsHeader
 		p->AddHeader (seqTs);
 		// add udp header
@@ -913,11 +914,12 @@ namespace ns3{
 	 ***********************/
 	const double RdmaHw::XCP_MIN_INTERVAL = 0.001;
 	const double RdmaHw::XCP_MAX_INTERVAL = 1;
-	const double RdmaQueuePair::ALPHA = 0.4;
-	const double RdmaQueuePair::BETA = 0.226;
-	const double RdmaQueuePair::GAMMA = 0.1;
+	const double RdmaHw::ALPHA = 0.4;
+	const double RdmaHw::BETA = 0.226;
+	const double RdmaHw::GAMMA = 0.1;
 
-	void RdmaHw::XcpState::XcpState() {
+	RdmaHw::XcpState::XcpState(Ptr<RdmaHw> rdmaHw) {
+		m_rdmaHw = rdmaHw;
 		m_avg_rtt = INITIAL_Te_VALUE; // may be allowed to use BDP to calculate
 		m_Te = Seconds(INITIAL_Te_VALUE);
 
@@ -929,31 +931,27 @@ namespace ns3{
 		Ptr<NormalRandomVariable> x = CreateObject<NormalRandomVariable>();
 		x->SetAttribute("Mean", DoubleValue(m_Te.GetSeconds()));
 		x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Te.GetSeconds(), 2)));
-		m_estimation_control_timer = CreateObject<Timer>();
-		m_estimation_control_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
-		m_estimation_control_timer->SetFunction(MakeCallback(&RdmaHw::XcpState::Te_timeout, this));
-		m_estimation_control_timer->Schedule();
+		m_estimation_control_timer.SetDelay(Seconds(std::max(0.004, x->GetValue())));
+		m_estimation_control_timer.SetFunction(&RdmaHw::XcpState::Te_timeout, this);
+		m_estimation_control_timer.Schedule();
 
 		// x->SetAttribute("Mean", DoubleValue(m_Tq.GetSeconds()));
 		// x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Tq.GetSeconds(), 2)));
-		// m_queue_timer = CreateObject<Timer>();
-		// m_queue_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
-		// m_queue_timer->SetFunction(MakeCallback(&RdmaHw::XcpState::Tq_timeout, this));
-		// m_queue_timer->Schedule();
+		// m_queue_timer.SetDelay(Seconds(std::max(0.004, x->GetValue())));
+		// m_queue_timer.SetFunction(&RdmaHw::XcpState::Tq_timeout, this);
+		// m_queue_timer.Schedule();
 
 		// x->SetAttribute("Mean", DoubleValue(m_Tr.GetSeconds()));
 		// x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Tr.GetSeconds(), 2)));
-		// m_rtt_timer = CreateObject<Timer>();
-		// m_rtt_timer->SetDelay(Seconds(std::max(0.004, x->GetValue())));
-		// m_rtt_timer->SetFunction(MakeCallback(&RdmaHw::XcpState::everyRTT, this));
-		// m_rtt_timer->Schedule();
+		// m_rtt_timer.SetDelay(Seconds(std::max(0.004, x->GetValue())));
+		// m_rtt_timer.SetFunction(&RdmaHw::XcpState::everyRTT, this);
+		// m_rtt_timer.Schedule();
 	}
 
 	void RdmaHw::XcpState::Te_timeout() {
-
 		if (!m_queue_pairs.empty()) {
-			m_avg_rtt = std::accumulate(m_queue_pairs.begin(), m_queue_pairs.end(), 0.0, (const RdmaQueuePair &a, const RdmaQueuePair &b) {
-				return std::min(a.m_rtt_estimator.GetCurrentEstimate().GetSeconds() + b.m_rtt_estimator.GetCurrentEstimate().GetSeconds(), 2 * XCP_MAX_INTERVAL);
+			m_avg_rtt = std::accumulate(m_queue_pairs.begin(), m_queue_pairs.end(), 0.0, [](double sum, const Ptr<RdmaQueuePair> &a){
+				return sum + std::min(a->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds(), XCP_MAX_INTERVAL);
 			}) / m_queue_pairs.size();
 		} else {
 			m_avg_rtt = INITIAL_Te_VALUE;
@@ -965,7 +963,7 @@ namespace ns3{
 			double min_feedback = std::numeric_limits<double>::max();
 			for (uint32_t i = 0; i < IntHeader::maxHop; i++) {
 				// per hop
-				if (qp->xcpint.hopState[i].valid) {
+				if (qp->xcpint.hopState[i].m_valid) {
 					double phi_bps = 0.0;
 					double shuffled_traffic_bps = 0.0;
 
@@ -975,7 +973,7 @@ namespace ns3{
 					shuffled_traffic_bps = GAMMA * rv / m_avg_rtt;
 
 					if (shuffled_traffic_bps > std::abs(phi_bps))
-						shuffled_traffic_bps -= std::abs(phi_bps)
+						shuffled_traffic_bps -= std::abs(phi_bps);
 					else
 						shuffled_traffic_bps = 0.0;
 
@@ -986,7 +984,7 @@ namespace ns3{
 					double num_active_flows;
 					std::memcpy(&num_active_flows, &raw_num_active_flows, sizeof(double));
 
-					double pos_fbk = residue_pos_fbk * qp->xcpint.m_packet_size / (qp->m_curRate.GetBitRate() / 8.0 * (num_active_flows - qp->xcpint.hopState[i].m_start_flow_sum) * std::min(qp->xcpint.m_rtt_estimator.GetCurrentEstimate().GetSeconds(), XCP_MAX_INTERVAL));
+					double pos_fbk = residue_pos_fbk * qp->xcpint.m_packet_size / (qp->xcpint.m_curRate.GetBitRate() / 8.0 * (num_active_flows - qp->xcpint.hopState[i].m_start_flow_sum) * std::min(qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds(), XCP_MAX_INTERVAL));
 					double neg_fbk = residue_neg_fbk * qp->xcpint.m_packet_size / rv;
 
 					min_feedback = std::min(min_feedback, pos_fbk - neg_fbk);
@@ -996,12 +994,12 @@ namespace ns3{
 				}
 			}
 			qp->xcpint.m_curRate = DataRate(std::llround(min_feedback) * 8);
-			ChangeRate(qp, qp->xcpint.m_curRate);
+			m_rdmaHw->ChangeRate(qp, qp->xcpint.m_curRate);
 		}
 
 		m_Te = Seconds(std::max(m_avg_rtt, XCP_MIN_INTERVAL));
-		m_estimation_control_timer->SetDelay(m_Te);
-		m_estimation_control_timer->Schedule();
+		m_estimation_control_timer.SetDelay(m_Te);
+		m_estimation_control_timer.Schedule();
 	}
 
 	// void RdmaHw::XcpState::Tq_timeout() {
@@ -1026,7 +1024,7 @@ namespace ns3{
 
 	// TODO: mark packet that is in new control interval, also before starting a new control interval, make sure to use flow sum
 	void RdmaHw::HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
-		NS_LOG_FUNCTION(this << "Sender ID: " << ch.ack.xcpId);
+		std::cout << "Sender ID: " << ch.ack.xcpId << std::endl;
 
 		NS_ASSERT(m_xcpStateMap.find(qp) != m_xcpStateMap.end());
 
@@ -1034,7 +1032,7 @@ namespace ns3{
 
 		// UPDATE RTT ESTIMATE=================================
 
-		qp->xcpint.m_rtt_estimator.Measurement(TimeStep(Simulator::Now().GetTimeStep() - ch.ack.ts));
+		qp->xcpint.m_rtt_estimator->Measurement(TimeStep(Simulator::Now().GetTimeStep() - ch.ack.ts));
 
 		// END UPDATE RTT ESTIMATE=============================
 
@@ -1056,7 +1054,7 @@ namespace ns3{
 
 		if (qp->xcpint.m_lastUpdateSeq == 0){ // first RTT
 			qp->xcpint.m_lastUpdateSeq = next_seq;
-			NS_ASSERT(qp->xcpint.m_rtt_estimator.GetCurrentEstimate().GetSeconds() == 0);
+			NS_ASSERT(qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds() == 0);
 		 	// qp->xcp.m_curRate at max here
 		}
 

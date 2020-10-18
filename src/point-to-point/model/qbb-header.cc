@@ -50,7 +50,7 @@ namespace ns3 {
 	void qbbHeader::SetCnp(){
 		flags |= 1 << FLAG_CNP;
 	}
-	void SetXCP(uint64_t times, double cfi, uint32_t xi) {
+	void qbbHeader::SetXCP(uint64_t times, double cfi, uint32_t xi) {
 		ts = times;
 		concflows_inc = cfi;
 		xcpId = xi;

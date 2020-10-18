@@ -7,10 +7,10 @@
 #include <ns3/custom-header.h>
 #include "qbb-net-device.h"
 #include <unordered_map>
-#include "random-variable-stream.h"
 #include <ns3/timer.h>
 #include <unordered_set>
 #include <cstring>
+#include "ns3/random-variable-stream.h"
 
 #define INITIAL_Te_VALUE 0.05
 
@@ -140,27 +140,42 @@ namespace ns3 {
 	static const double XCP_MIN_INTERVAL;
 	static const double XCP_MAX_INTERVAL;
 
+	struct RdmaQueuePairHasher {
+		std::size_t operator()(const Ptr<RdmaQueuePair> &k) const {
+			std::size_t seed = 0;
+
+			seed ^= std::hash<uint16_t>{}(k->m_pg) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= std::hash<uint32_t>{}(k->sip.Get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= std::hash<uint32_t>{}(k->dip.Get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= std::hash<uint16_t>{}(k->sport) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= std::hash<uint16_t>{}(k->dport) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+			return seed;
+		}
+	};
+
 	struct XcpState {
+		Ptr<RdmaHw> m_rdmaHw;
 		double m_avg_rtt;
-		std::unordered_set<Ptr<RdmaQueuePair> > m_queue_pairs;
+		std::unordered_set<Ptr<RdmaQueuePair>, RdmaQueuePairHasher> m_queue_pairs;
 
 		Time m_Te;
-		Ptr<Timer> m_estimation_control_timer;
+		Timer m_estimation_control_timer;
 		// Time m_Tq;
-		// Ptr<Timer> m_queue_timer;
+		// Timer m_queue_timer;
 		// Time m_Tr;
-		// Ptr<Timer> m_rtt_timer;
+		// Timer m_rtt_timer;
 
 		// uint32_t m_queue_bytes;
 		// uint32_t m_running_min_queue;
 
-		XcpState();
+		XcpState(Ptr<RdmaHw> rdmaHw);
 
 		void Te_timeout();
 		// void Tq_timeout();
 		// void everyRTT();
 	};
-	std::unordered_map<Ptr<RdmaQueuePair>, XcpState> m_xcpStateMap;
+	std::unordered_map<Ptr<RdmaQueuePair>, XcpState, RdmaQueuePairHasher> m_xcpStateMap;
 
 	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
