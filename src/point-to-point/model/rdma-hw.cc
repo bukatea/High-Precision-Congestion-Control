@@ -309,7 +309,7 @@ namespace ns3{
 			if (ecnbits)
 				seqh.SetCnp();
 
-			Ptr<Packet> newp = Create<Packet>(std::max(60-14-20-(int)seqh.GetSerializedSize(), 0));
+			Ptr<Packet> newp = Create<Packet>(std::max(60-14-(IntHeader::mode == 20 ? 0 : 20)-(int)seqh.GetSerializedSize(), 0));
 			newp->AddHeader(seqh);
 
 			Ipv4Header head;	// Prepare IPv4 header
@@ -367,8 +367,6 @@ namespace ns3{
 				}
 			}else if (m_cc_mode == 7){
 				qp->tmly.m_curRate = dev->GetDataRate();
-			} else if (m_cc_mode == 20) {
-				qp->xcpint.m_curRate = dev->GetDataRate();
 			}
 		}
 		return 0;

@@ -130,6 +130,7 @@ namespace ns3 {
 			i.WriteU64(ts);
 			uint64_t ui;
 			std::memcpy(&ui, &concflows_inc, sizeof(double));
+			i.WriteU64(ui);
 			i.WriteU32(xcpId);
 		}
 

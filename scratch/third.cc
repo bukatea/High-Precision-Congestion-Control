@@ -598,7 +598,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-
 	bool dynamicth = use_dynamic_pfc_threshold;
 
 	Config::SetDefault("ns3::QbbNetDevice::PauseTime", UintegerValue(pause_time));
