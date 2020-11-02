@@ -213,11 +213,9 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 	if (1){
 		uint8_t* buf = p->GetBuffer();
 		if (buf[PppHeader::GetStaticSize() + 9] == 0x11){ // udp packet
-			if (m_ccMode == 20){
-				SeqTsHeader *sh = (SeqTsHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8];
-				m_concflows_inc_sum += sh->m_concflows_inc;
-			}
-			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + 6]; // ppp, ip, udp, SeqTs, INT
+			if (m_ccMode == 20)
+				m_concflows_inc_sum += buf[PppHeader::GetStaticSize() + 20 + 8 + 6 + 8];
+			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + 6 + (m_ccMode == 20 ? 20 : 0)]; // ppp, ip, udp, SeqTs, INT
 			Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(m_devices[ifIndex]);
 			if (m_ccMode == 3){ // HPCC
 				ih->PushHop(Simulator::Now().GetTimeStep(), m_txBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());

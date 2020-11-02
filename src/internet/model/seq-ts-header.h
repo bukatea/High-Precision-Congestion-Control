@@ -67,11 +67,11 @@ namespace ns3 {
     uint32_t m_seq;
     uint16_t m_pg;
   public:
-    IntHeader ih;
-
     uint64_t m_ts;
     double m_concflows_inc;
     uint32_t m_xcpId; // for debugging
+
+    IntHeader ih;
   };
 
 } // namespace ns3
