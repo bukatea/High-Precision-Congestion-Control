@@ -215,14 +215,13 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 		if (buf[PppHeader::GetStaticSize() + 9] == 0x11){ // udp packet
 			if (m_ccMode == 20){
 				SeqTsHeader *sh = (SeqTsHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8];
-				m_concflows_inc_sum += sh->hdr_xcp.m_concflows_inc;
+				m_concflows_inc_sum += sh->m_concflows_inc;
 			}
-			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + SeqTsHeader::GetHeaderSize()]; // ppp, ip, udp, SeqTs, INT
+			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + 6]; // ppp, ip, udp, SeqTs, INT
 			Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(m_devices[ifIndex]);
 			if (m_ccMode == 3){ // HPCC
 				ih->PushHop(Simulator::Now().GetTimeStep(), m_txBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());
-			}
-			if (m_ccMode == 20){ // XCP-INT
+			} else if (m_ccMode == 20){ // XCP-INT
 				uint64_t ui;
 				std::memcpy(&ui, &m_concflows_inc_sum, sizeof(double));
 				ih->PushHop(ui, m_rxBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());

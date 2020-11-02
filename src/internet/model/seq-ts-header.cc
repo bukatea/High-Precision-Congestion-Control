@@ -35,7 +35,7 @@ SeqTsHeader::SeqTsHeader ()
   if (IntHeader::mode == 1)
     ih.ts = Simulator::Now().GetTimeStep();
   else if (IntHeader::mode == 20)
-    hdr_xcp.m_ts = Simulator::Now().GetTimeStep();
+    m_ts = Simulator::Now().GetTimeStep();
 }
 
 void
@@ -66,7 +66,7 @@ SeqTsHeader::GetTs (void) const
   if (IntHeader::mode == 1)
     return TimeStep(ih.ts);
   else if (IntHeader::mode == 20)
-    return TimeStep(hdr_xcp.m_ts);
+    return TimeStep(m_ts);
   NS_ASSERT_MSG(IntHeader::mode == 1 || IntHeader::mode == 20, "SeqTsHeader cannot GetTs when IntHeader::mode != 1");
   return Time();
 }
@@ -93,7 +93,7 @@ SeqTsHeader::Print (std::ostream &os) const
 	//os << m_seq << " " << TimeStep (m_ts).GetSeconds () << " " << m_pg;
 	os << m_seq << " " << m_pg;
 	if (IntHeader::mode == 20)
-		os << std::endl << hdr_xcp.m_ts << " " << hdr_xcp.m_concflows_inc << " " << hdr_xcp.m_xcpId;
+		os << std::endl << m_ts << " " << m_concflows_inc << " " << m_xcpId;
 }
 uint32_t
 SeqTsHeader::GetSerializedSize (void) const
@@ -102,7 +102,7 @@ SeqTsHeader::GetSerializedSize (void) const
 }
 uint32_t SeqTsHeader::GetHeaderSize(void){
   uint32_t val = 6 + IntHeader::GetStaticSize();
-  return IntHeader::mode == 20 ? val + sizeof(hdr_xcp) : val;
+  return IntHeader::mode == 20 ? val + sizeof(m_ts) + sizeof(m_concflows_inc) + sizeof(m_xcpId) : val;
 }
 
 void
@@ -113,11 +113,11 @@ SeqTsHeader::Serialize (Buffer::Iterator start) const
   i.WriteHtonU16 (m_pg);
 
   if (IntHeader::mode == 20) {
-    i.WriteHtonU64(hdr_xcp.m_ts);
+    i.WriteHtonU64(m_ts);
     uint64_t ui;
-    std::memcpy(&ui, &hdr_xcp.m_concflows_inc, sizeof(double));
+    std::memcpy(&ui, &m_concflows_inc, sizeof(double));
     i.WriteHtonU64(ui);
-    i.WriteHtonU32(hdr_xcp.m_xcpId);
+    i.WriteHtonU32(m_xcpId);
   }
 
   // write IntHeader
@@ -131,11 +131,11 @@ SeqTsHeader::Deserialize (Buffer::Iterator start)
   m_pg =  i.ReadNtohU16 ();
 
   if (IntHeader::mode == 20) {
-    hdr_xcp.m_ts = i.ReadNtohU64();
+    m_ts = i.ReadNtohU64();
     uint64_t ui;
     ui = i.ReadNtohU64();
-    std::memcpy(&hdr_xcp.m_concflows_inc, &ui, sizeof(double));
-    hdr_xcp.m_xcpId = i.ReadNtohU32();
+    std::memcpy(&m_concflows_inc, &ui, sizeof(double));
+    m_xcpId = i.ReadNtohU32();
   }
 
   // read IntHeader

@@ -552,8 +552,8 @@ namespace ns3{
 		seqTs.SetPG (qp->m_pg);
 		qp->xcpint.m_packet_size = payload_size + seqTs.GetSerializedSize() + udpHeader.GetSerializedSize() + ipHeader.GetSerializedSize() + ppp.GetSerializedSize();
 		if (IntHeader::mode == 20) {
-			seqTs.hdr_xcp.m_xcpId = qp->sip.Get();
-			seqTs.hdr_xcp.m_concflows_inc = 1.0 / (m_xcpStateMap.at(qp).m_avg_rtt * qp->xcpint.m_curRate.GetBitRate() / 8.0 / qp->xcpint.m_packet_size);
+			seqTs.m_xcpId = qp->sip.Get();
+			seqTs.m_concflows_inc = 1.0 / (m_xcpStateMap.at(qp).m_avg_rtt * qp->xcpint.m_curRate.GetBitRate() / 8.0 / qp->xcpint.m_packet_size);
 		}
 
 		// add SeqTsHeader

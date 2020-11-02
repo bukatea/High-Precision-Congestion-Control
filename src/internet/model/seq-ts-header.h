@@ -69,11 +69,9 @@ namespace ns3 {
   public:
     IntHeader ih;
 
-    struct {
-      uint64_t m_ts;
-      double m_concflows_inc;
-      uint32_t m_xcpId; // for debugging
-    } hdr_xcp;
+    uint64_t m_ts;
+    double m_concflows_inc;
+    uint32_t m_xcpId; // for debugging
   };
 
 } // namespace ns3
