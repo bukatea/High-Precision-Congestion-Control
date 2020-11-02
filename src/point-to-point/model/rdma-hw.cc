@@ -1049,13 +1049,6 @@ namespace ns3{
 		// XCP ROUTER STUFF====================================
 
 		uint32_t next_seq = qp->snd_nxt;
-
-		if (qp->xcpint.m_lastUpdateSeq == 0){ // first RTT
-			qp->xcpint.m_lastUpdateSeq = next_seq;
-			NS_ASSERT(qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds() == 0);
-		 	// qp->xcp.m_curRate at max here
-		}
-
 		NS_ASSERT(ih.nhop <= IntHeader::maxHop);
 		printf("%lu %08x %08x %u %u [%u,%u,%u]", Simulator::Now().GetTimeStep(), qp->sip.Get(), qp->dip.Get(), qp->sport, qp->dport, qp->xcpint.m_lastUpdateSeq, ch.ack.seq, next_seq);
 		for (uint32_t i = 0; i < ih.nhop; i++) {
