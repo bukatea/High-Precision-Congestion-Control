@@ -50,6 +50,7 @@ def build(bld):
 		'model/switch-node.h',
 		'model/switch-mmu.h',
 		'helper/sim-setting.h',
+	'model/half.hpp'
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):

@@ -11,6 +11,7 @@
 #include "ppp-header.h"
 #include "ns3/int-header.h"
 #include "ns3/seq-ts-header.h"
+#include "half.hpp"
 
 namespace ns3 {
 
@@ -182,7 +183,7 @@ void SwitchNode::ClearTable(){
 
 // This function can only be called in switch mode
 bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch){
-	m_rxBytes[DynamicCast<QbbNetDevice>(device)->m_ifIndex] += packet->GetSize();
+	m_currPacketSize = packet->GetSize();
 	SendToDev(packet, ch);
 	return true;
 }
@@ -211,18 +212,27 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 		CheckAndSendResume(inDev, qIndex);
 	}
 	if (1){
-		uint8_t* buf = p->GetBuffer();
+		m_rxBytes[ifIndex] += m_currPacketSize;
+		uint8_t* buf = p->GetRawBuffer();
 		if (buf[PppHeader::GetStaticSize() + 9] == 0x11){ // udp packet
-			if (m_ccMode == 20)
-				m_concflows_inc_sum += buf[PppHeader::GetStaticSize() + 20 + 8 + 6 + 8];
+			if (m_ccMode == 20) {
+				Buffer::Iterator it = p->GetBuffer().Begin();
+				it.Next(PppHeader::GetStaticSize() + 20 + 8 + 6 + 8);
+				uint64_t ui = it.ReadNtohU64();
+				double increment;
+				std::memcpy(&increment, &ui, sizeof(double));
+				m_concflows_inc_sum += increment;
+			}
 			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + 6 + (m_ccMode == 20 ? 20 : 0)]; // ppp, ip, udp, SeqTs, INT
 			Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(m_devices[ifIndex]);
 			if (m_ccMode == 3){ // HPCC
 				ih->PushHop(Simulator::Now().GetTimeStep(), m_txBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());
 			} else if (m_ccMode == 20){ // XCP-INT
-				uint64_t ui;
-				std::memcpy(&ui, &m_concflows_inc_sum, sizeof(double));
+				half_float::half truncated = half_float::half_cast<half_float::half>(m_concflows_inc_sum);
+				uint64_t ui = static_cast<uint64_t>(truncated.data());
 				ih->PushHop(ui, m_rxBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());
+				ui = ih->hop[0].GetTime();
+				m_concflows_inc_sum = half_float::half_cast<double>(half_float::half(static_cast<uint16_t>(ui)));
 			}
 		}
 	}

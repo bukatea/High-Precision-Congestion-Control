@@ -50,9 +50,8 @@ namespace ns3 {
 	void qbbHeader::SetCnp(){
 		flags |= 1 << FLAG_CNP;
 	}
-	void qbbHeader::SetXCP(uint64_t times, double cfi, uint32_t xi) {
+	void qbbHeader::SetXCP(uint64_t times, uint32_t xi) {
 		ts = times;
-		concflows_inc = cfi;
 		xcpId = xi;
 	}
 	void qbbHeader::SetIntHeader(const IntHeader &_ih){
@@ -107,12 +106,12 @@ namespace ns3 {
 	{
 		os << "qbb:" << "pg=" << m_pg << ",seq=" << m_seq;
 		if (IntHeader::mode == 20)
-			os << ",ts=" << ts << ",concflows_inc=" << concflows_inc << ",xcpId=" << xcpId;
+			os << ",ts=" << ts << ",xcpId=" << xcpId;
 	}
 	uint32_t qbbHeader::GetSerializedSize(void)  const
 	{
 		uint32_t val = GetBaseSize() + IntHeader::GetStaticSize();
-		return IntHeader::mode == 20 ? val + sizeof(ts) + sizeof(concflows_inc) + sizeof(xcpId) : val;
+		return IntHeader::mode == 20 ? val + sizeof(ts) + sizeof(xcpId) : val;
 	}
 	uint32_t qbbHeader::GetBaseSize() {
 		qbbHeader tmp;
@@ -128,9 +127,6 @@ namespace ns3 {
 		i.WriteU32(m_seq);
 		if (IntHeader::mode == 20) {
 			i.WriteU64(ts);
-			uint64_t ui;
-			std::memcpy(&ui, &concflows_inc, sizeof(double));
-			i.WriteU64(ui);
 			i.WriteU32(xcpId);
 		}
 
@@ -148,9 +144,6 @@ namespace ns3 {
 		m_seq = i.ReadU32();
 		if (IntHeader::mode == 20) {
 			ts = i.ReadU64();
-			uint64_t ui;
-			ui = i.ReadU64();
-			std::memcpy(&concflows_inc, &ui, sizeof(double));
 			xcpId = i.ReadU32();
 		}
 

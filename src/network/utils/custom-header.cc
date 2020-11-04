@@ -183,9 +183,6 @@ void CustomHeader::Serialize (Buffer::Iterator start) const{
 	  	i.WriteU32(ack.seq);
 	  	if (IntHeader::mode == 20) {
 	  		i.WriteU64(ack.ts);
-	  		uint64_t ui;
-	  		std::memcpy(&ui, &ack.concflows_inc, sizeof(double));
-	  		i.WriteU64(ui);
 	  		i.WriteU32(ack.xcpId);
 	  	}
 	  	udp.ih.Serialize(i);
@@ -333,9 +330,6 @@ CustomHeader::Deserialize (Buffer::Iterator start)
 	  	ack.seq = i.ReadU32();
 	  	if (IntHeader::mode == 20) {
 	  		ack.ts = i.ReadU64();
-	  		uint64_t ui;
-	  		ui = i.ReadU64();
-	  		std::memcpy(&ack.concflows_inc, &ui, sizeof(double));
 	  		ack.xcpId = i.ReadU32();
 	  	}
 	  	if (getInt)
@@ -358,7 +352,7 @@ uint8_t CustomHeader::GetIpv4EcnBits (void) const{
 
 uint32_t CustomHeader::GetAckSerializedSize(void){
 	uint32_t val = sizeof(ack.sport) + sizeof(ack.dport) + sizeof(ack.flags) + sizeof(ack.pg) + sizeof(ack.seq) + IntHeader::GetStaticSize();
-	return IntHeader::mode == 20 ? val + sizeof(ack.ts) + sizeof(ack.concflows_inc) + sizeof(ack.xcpId) : val;
+	return IntHeader::mode == 20 ? val + sizeof(ack.ts) + sizeof(ack.xcpId) : val;
 }
 
 uint32_t CustomHeader::GetUdpHeaderSize(void){

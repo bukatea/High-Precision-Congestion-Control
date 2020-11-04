@@ -128,7 +128,6 @@ namespace ns3 {
       uint16_t pg;
 		  uint32_t seq; // the qbb sequence number.
       uint64_t ts;
-      double concflows_inc;
       uint32_t xcpId;
       IntHeader ih;
     } ack;

@@ -175,7 +175,7 @@ namespace ns3 {
 		// void Tq_timeout();
 		// void everyRTT();
 	};
-	std::unordered_map<Ptr<RdmaQueuePair>, XcpState, RdmaQueuePairHasher> m_xcpStateMap;
+	std::unordered_map<uint32_t, XcpState> m_xcpStateMap;
 
 	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);

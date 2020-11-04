@@ -12,6 +12,7 @@
 #include "ppp-header.h"
 #include "qbb-header.h"
 #include "cn-header.h"
+#include "half.hpp"
 
 namespace ns3{
 
@@ -246,8 +247,8 @@ namespace ns3{
 		} else if (m_cc_mode == 20) {
 			qp->xcpint.m_curRate = m_bps;
 
-			m_xcpStateMap.emplace(std::piecewise_construct, std::forward_as_tuple(qp), std::forward_as_tuple(Ptr<RdmaHw>(this)));
-			m_xcpStateMap.at(qp).m_queue_pairs.insert(qp);
+			m_xcpStateMap.emplace(std::piecewise_construct, std::forward_as_tuple(nic_idx), std::forward_as_tuple(Ptr<RdmaHw>(this)));
+			m_xcpStateMap.at(nic_idx).m_queue_pairs.insert(qp);
 		}
 
 	// Notify Nic
@@ -304,12 +305,12 @@ namespace ns3{
 			seqh.SetPG(ch.udp.pg);
 			seqh.SetSport(ch.udp.dport);
 			seqh.SetDport(ch.udp.sport);
-			seqh.SetXCP(ch.udp.ts, ch.udp.concflows_inc, ch.udp.xcpId);
+			seqh.SetXCP(ch.udp.ts, ch.udp.xcpId);
 			seqh.SetIntHeader(ch.udp.ih);
 			if (ecnbits)
 				seqh.SetCnp();
 
-			Ptr<Packet> newp = Create<Packet>(std::max(60-14-(IntHeader::mode == 20 ? 0 : 20)-(int)seqh.GetSerializedSize(), 0));
+			Ptr<Packet> newp = Create<Packet>(std::max(60-14-(IntHeader::mode == 20 ? 8 : 20)-(int)seqh.GetSerializedSize(), 0));
 			newp->AddHeader(seqh);
 
 			Ipv4Header head;	// Prepare IPv4 header
@@ -488,7 +489,8 @@ namespace ns3{
 			Simulator::Cancel(qp->mlx.m_eventDecreaseRate);
 			Simulator::Cancel(qp->mlx.m_rpTimer);
 		} else if (m_cc_mode == 20) {
-			m_xcpStateMap.at(qp).m_queue_pairs.erase(m_xcpStateMap.at(qp).m_queue_pairs.find(qp));
+			uint32_t nic_idx = GetNicIdxOfQp(qp);
+			m_xcpStateMap.at(nic_idx).m_queue_pairs.erase(m_xcpStateMap.at(nic_idx).m_queue_pairs.find(qp));
 		}
 		m_qpCompleteCallback(qp);
 	}
@@ -553,7 +555,7 @@ namespace ns3{
 		qp->xcpint.m_packet_size = payload_size + seqTs.GetSerializedSize() + udpHeader.GetSerializedSize() + ipHeader.GetSerializedSize() + ppp.GetSerializedSize();
 		if (IntHeader::mode == 20) {
 			seqTs.m_xcpId = qp->sip.Get();
-			seqTs.m_concflows_inc = 1.0 / (m_xcpStateMap.at(qp).m_avg_rtt * qp->xcpint.m_curRate.GetBitRate() / 8.0 / qp->xcpint.m_packet_size);
+			seqTs.m_concflows_inc = 1.0 / (m_xcpStateMap.at(GetNicIdxOfQp(qp)).m_avg_rtt * qp->xcpint.m_curRate.GetBitRate() / 8.0 / qp->xcpint.m_packet_size);
 		}
 
 		// add SeqTsHeader
@@ -979,8 +981,7 @@ namespace ns3{
 					double residue_neg_fbk = std::max(0.0, -phi_bps) + shuffled_traffic_bps;
 
 					uint64_t raw_num_active_flows = qp->xcpint.hop[i].GetTime();
-					double num_active_flows;
-					std::memcpy(&num_active_flows, &raw_num_active_flows, sizeof(double));
+					double num_active_flows = half_float::half_cast<double>(half_float::half(static_cast<uint16_t>(raw_num_active_flows)));
 
 					double pos_fbk = residue_pos_fbk * qp->xcpint.m_packet_size / (qp->xcpint.m_curRate.GetBitRate() / 8.0 * (num_active_flows - qp->xcpint.hopState[i].m_start_flow_sum) * std::min(qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds(), XCP_MAX_INTERVAL));
 					double neg_fbk = residue_neg_fbk * qp->xcpint.m_packet_size / rv;
@@ -1024,7 +1025,9 @@ namespace ns3{
 	void RdmaHw::HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
 		std::cout << "Sender ID: " << ch.ack.xcpId << std::endl;
 
-		NS_ASSERT(m_xcpStateMap.find(qp) != m_xcpStateMap.end());
+		uint32_t nic_idx = GetNicIdxOfQp(qp);
+		NS_ASSERT(m_xcpStateMap.find(nic_idx) != m_xcpStateMap.end());
+		NS_ASSERT(m_xcpStateMap.at(nic_idx).m_queue_pairs.find(qp) != m_xcpStateMap.at(nic_idx).m_queue_pairs.end());
 
 		IntHeader &ih = ch.ack.ih;
 
@@ -1053,9 +1056,8 @@ namespace ns3{
 		printf("%lu %08x %08x %u %u [%u,%u,%u]", Simulator::Now().GetTimeStep(), qp->sip.Get(), qp->dip.Get(), qp->sport, qp->dport, qp->xcpint.m_lastUpdateSeq, ch.ack.seq, next_seq);
 		for (uint32_t i = 0; i < ih.nhop; i++) {
 			uint64_t raw_num_active_flows = ih.hop[i].GetTime();
-			double num_active_flows;
-			std::memcpy(&num_active_flows, &raw_num_active_flows, sizeof(double));
-			printf(" %u %lu %f", ih.hop[i].GetQlen(), ih.hop[i].GetBytes(), num_active_flows);
+			double num_active_flows = half_float::half_cast<double>(half_float::half(static_cast<uint16_t>(raw_num_active_flows)));
+			printf(" INT: %u %lu %f", ih.hop[i].GetQlen(), ih.hop[i].GetBytes(), num_active_flows);
 		}
 		printf("\n");
 

@@ -905,7 +905,11 @@ Ptr<Packet> Create (uint32_t a1)
 	return Ptr<Packet> (new Packet (a1), false);
 }
 
-uint8_t* Packet::GetBuffer() const{
+Buffer Packet::GetBuffer() const {
+  return m_buffer;
+}
+
+uint8_t* Packet::GetRawBuffer() const{
 	return m_buffer.GetBuffer();
 }
 

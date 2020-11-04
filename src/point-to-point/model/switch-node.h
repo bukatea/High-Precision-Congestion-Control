@@ -25,6 +25,8 @@ class SwitchNode : public Node{
 
 	double m_concflows_inc_sum;
 
+	uint32_t m_currPacketSize;
+
 protected:
 	bool m_ecnEnabled;
 	uint32_t m_ccMode;

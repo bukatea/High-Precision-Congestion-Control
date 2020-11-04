@@ -41,7 +41,7 @@ public:
   void SetDport(uint32_t _dport);
   void SetTs(uint64_t tis);
   void SetCnp();
-  void SetXCP(uint64_t times, double cfi, uint32_t xi);
+  void SetXCP(uint64_t times, uint32_t xi);
   void SetIntHeader(const IntHeader &_ih);
 
 //Getters
@@ -70,7 +70,6 @@ private:
   uint16_t m_pg;
   uint32_t m_seq; // the qbb sequence number.
   uint64_t ts;
-  double concflows_inc;
   uint32_t xcpId;
   IntHeader ih;
   
