@@ -164,6 +164,8 @@ void CustomHeader::Serialize (Buffer::Iterator start) const{
 	  	if (IntHeader::mode == 20) {
 	  		i.WriteHtonU64(udp.ts);
 	  		uint64_t ui;
+	  		std::memcpy(&ui, &udp.rtt_estimate, sizeof(double));
+	  		i.WriteHtonU64(ui);
 	  		std::memcpy(&ui, &udp.concflows_inc, sizeof(double));
 	  		i.WriteHtonU64(ui);
 	  		i.WriteHtonU32(udp.xcpId);
@@ -308,6 +310,8 @@ CustomHeader::Deserialize (Buffer::Iterator start)
 	  		udp.ts = i.ReadNtohU64();
 	  		uint64_t ui;
 	  		ui = i.ReadNtohU64();
+	  		std::memcpy(&udp.rtt_estimate, &ui, sizeof(double));
+	  		ui = i.ReadNtohU64();
 	  		std::memcpy(&udp.concflows_inc, &ui, sizeof(double));
 	  		udp.xcpId = i.ReadNtohU32();
 	  	}
@@ -357,7 +361,7 @@ uint32_t CustomHeader::GetAckSerializedSize(void){
 
 uint32_t CustomHeader::GetUdpHeaderSize(void){
 	uint32_t val = 8 + sizeof(udp.pg) + sizeof(udp.seq) + IntHeader::GetStaticSize();
-	return IntHeader::mode == 20 ? val + sizeof(udp.ts) + sizeof(udp.concflows_inc) + sizeof(udp.xcpId) : val;
+	return IntHeader::mode == 20 ? val + sizeof(udp.ts) + sizeof(udp.rtt_estimate) + sizeof(udp.concflows_inc) + sizeof(udp.xcpId) : val;
 }
 
 } // namespace ns3

@@ -49,8 +49,7 @@ def build(bld):
 		'model/rdma-hw.h',
 		'model/switch-node.h',
 		'model/switch-mmu.h',
-		'helper/sim-setting.h',
-	'model/half.hpp'
+		'helper/sim-setting.h'
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):

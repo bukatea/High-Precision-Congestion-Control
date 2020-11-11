@@ -93,7 +93,7 @@ SeqTsHeader::Print (std::ostream &os) const
 	//os << m_seq << " " << TimeStep (m_ts).GetSeconds () << " " << m_pg;
 	os << m_seq << " " << m_pg;
 	if (IntHeader::mode == 20)
-		os << std::endl << m_ts << " " << m_concflows_inc << " " << m_xcpId;
+		os << std::endl << m_ts << " " << m_rtt_estimate << " " << m_concflows_inc << " " << m_xcpId;
 }
 uint32_t
 SeqTsHeader::GetSerializedSize (void) const
@@ -102,7 +102,7 @@ SeqTsHeader::GetSerializedSize (void) const
 }
 uint32_t SeqTsHeader::GetHeaderSize(void){
   uint32_t val = 6 + IntHeader::GetStaticSize();
-  return IntHeader::mode == 20 ? val + sizeof(m_ts) + sizeof(m_concflows_inc) + sizeof(m_xcpId) : val;
+  return IntHeader::mode == 20 ? val + sizeof(m_ts) + sizeof(m_rtt_estimate) + sizeof(m_concflows_inc) + sizeof(m_xcpId) : val;
 }
 
 void
@@ -115,6 +115,8 @@ SeqTsHeader::Serialize (Buffer::Iterator start) const
   if (IntHeader::mode == 20) {
     i.WriteHtonU64(m_ts);
     uint64_t ui;
+    std::memcpy(&ui, &m_rtt_estimate, sizeof(double));
+    i.WriteHtonU64(ui);
     std::memcpy(&ui, &m_concflows_inc, sizeof(double));
     i.WriteHtonU64(ui);
     i.WriteHtonU32(m_xcpId);
@@ -133,6 +135,8 @@ SeqTsHeader::Deserialize (Buffer::Iterator start)
   if (IntHeader::mode == 20) {
     m_ts = i.ReadNtohU64();
     uint64_t ui;
+    ui = i.ReadNtohU64();
+    std::memcpy(&m_rtt_estimate, &ui, sizeof(double));
     ui = i.ReadNtohU64();
     std::memcpy(&m_concflows_inc, &ui, sizeof(double));
     m_xcpId = i.ReadNtohU32();

@@ -10,9 +10,7 @@
 #include <ns3/timer.h>
 #include <unordered_set>
 #include <cstring>
-#include "ns3/random-variable-stream.h"
-
-#define INITIAL_Te_VALUE 0.05
+#include <functional>
 
 namespace ns3 {
 
@@ -46,6 +44,7 @@ namespace ns3 {
 	std::unordered_map<uint64_t, Ptr<RdmaQueuePair> > m_qpMap; // mapping from uint64_t to qp
 	std::unordered_map<uint64_t, Ptr<RdmaRxQueuePair> > m_rxQpMap; // mapping from uint64_t to rx qp
 	std::unordered_map<uint32_t, std::vector<int> > m_rtTable; // map from ip address (u32) to possible ECMP port (index of dev)
+	Ptr<RdmaQueuePair> m_qp;
 
 	// qp complete callback
 	typedef Callback<void, Ptr<RdmaQueuePair> > QpCompleteCallback;
@@ -137,45 +136,13 @@ namespace ns3 {
 	static const double ALPHA;
 	static const double BETA;
 	static const double GAMMA;
-	static const double XCP_MIN_INTERVAL;
-	static const double XCP_MAX_INTERVAL;
 
-	struct RdmaQueuePairHasher {
-		std::size_t operator()(const Ptr<RdmaQueuePair> &k) const {
-			std::size_t seed = 0;
+	double m_avg_rtt;
 
-			seed ^= std::hash<uint16_t>{}(k->m_pg) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<uint32_t>{}(k->sip.Get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<uint32_t>{}(k->dip.Get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<uint16_t>{}(k->sport) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<uint16_t>{}(k->dport) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	Time m_Te;
+	Timer m_estimation_control_timer;
 
-			return seed;
-		}
-	};
-
-	struct XcpState {
-		Ptr<RdmaHw> m_rdmaHw;
-		double m_avg_rtt;
-		std::unordered_set<Ptr<RdmaQueuePair>, RdmaQueuePairHasher> m_queue_pairs;
-
-		Time m_Te;
-		Timer m_estimation_control_timer;
-		// Time m_Tq;
-		// Timer m_queue_timer;
-		// Time m_Tr;
-		// Timer m_rtt_timer;
-
-		// uint32_t m_queue_bytes;
-		// uint32_t m_running_min_queue;
-
-		XcpState(Ptr<RdmaHw> rdmaHw);
-
-		void Te_timeout();
-		// void Tq_timeout();
-		// void everyRTT();
-	};
-	std::unordered_map<uint32_t, XcpState> m_xcpStateMap;
+	void Te_timeout();
 
 	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);

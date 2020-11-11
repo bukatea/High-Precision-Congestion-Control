@@ -63,14 +63,14 @@ namespace ns3 {
 	struct {
 		Ptr<RttMeanDeviation> m_rtt_estimator;
 		uint32_t m_packet_size;
-		uint32_t m_lastUpdateSeq;
 		DataRate m_curRate;
 		IntHop hop[IntHeader::maxHop];
 		struct {
 			bool m_valid;
 			uint32_t m_min_queue;
 			uint64_t m_start_rvbytes;
-			double m_start_flow_sum;
+			double m_start_num_flows;
+			double m_start_numerator;
 		} hopState[IntHeader::maxHop];
 	} xcpint;
 	struct{

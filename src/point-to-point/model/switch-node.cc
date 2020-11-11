@@ -11,7 +11,7 @@
 #include "ppp-header.h"
 #include "ns3/int-header.h"
 #include "ns3/seq-ts-header.h"
-#include "half.hpp"
+#include "ns3/random-variable-stream.h"
 
 namespace ns3 {
 
@@ -51,7 +51,6 @@ SwitchNode::SwitchNode(){
 		m_txBytes[i] = 0;
 		m_rxBytes[i] = 0;
 	}
-	m_concflows_inc_sum = 0;
 }
 
 int SwitchNode::GetOutDev(Ptr<const Packet> p, CustomHeader &ch){
@@ -181,9 +180,35 @@ void SwitchNode::ClearTable(){
 	m_rtTable.clear();
 }
 
+const double SwitchNode::XCP_MAX_INTERVAL = 1;
+
+SwitchNode::XcpState::XcpState() {
+	m_numerator_running_sum = 0;
+	m_concflows_inc_sum = 0;
+
+	// Ptr<NormalRandomVariable> x = CreateObject<NormalRandomVariable>();
+	// x->SetAttribute("Mean", DoubleValue(m_Te.GetSeconds()));
+	// x->SetAttribute("Variance", DoubleValue(std::pow(0.2 * m_Te.GetSeconds(), 2)));
+	// m_estimation_control_timer.SetDelay(Seconds(std::max(0.004, x->GetValue())));
+	// m_estimation_control_timer.SetDelay(Seconds(x->GetValue()));
+	// m_estimation_control_timer.SetFunction(&SwitchNode::XcpState::Te_timeout, this);
+	// m_estimation_control_timer.Schedule();
+}
+
 // This function can only be called in switch mode
 bool SwitchNode::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch){
-	m_currPacketSize = packet->GetSize();
+	if (m_ccMode == 20) {
+		uint32_t idx = GetOutDev(packet, ch);
+		m_rxBytes[idx] += packet->GetSize();
+
+		uint8_t* buf = packet->GetRawBuffer();
+		if (buf[PppHeader::GetStaticSize() + 9] == 0x11){ // udp packet
+			if (m_xcpStateMap.find(idx) == m_xcpStateMap.end())
+				m_xcpStateMap.emplace(std::piecewise_construct, std::forward_as_tuple(idx), std::forward_as_tuple());
+			m_xcpStateMap[idx].m_numerator_running_sum += std::min(ch.udp.rtt_estimate, XCP_MAX_INTERVAL) * ch.udp.concflows_inc;
+			m_xcpStateMap[idx].m_concflows_inc_sum += ch.udp.concflows_inc;
+		}
+	}
 	SendToDev(packet, ch);
 	return true;
 }
@@ -212,27 +237,20 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 		CheckAndSendResume(inDev, qIndex);
 	}
 	if (1){
-		m_rxBytes[ifIndex] += m_currPacketSize;
 		uint8_t* buf = p->GetRawBuffer();
 		if (buf[PppHeader::GetStaticSize() + 9] == 0x11){ // udp packet
-			if (m_ccMode == 20) {
-				Buffer::Iterator it = p->GetBuffer().Begin();
-				it.Next(PppHeader::GetStaticSize() + 20 + 8 + 6 + 8);
-				uint64_t ui = it.ReadNtohU64();
-				double increment;
-				std::memcpy(&increment, &ui, sizeof(double));
-				m_concflows_inc_sum += increment;
-			}
-			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + 6 + (m_ccMode == 20 ? 20 : 0)]; // ppp, ip, udp, SeqTs, INT
+			IntHeader *ih = (IntHeader*)&buf[PppHeader::GetStaticSize() + 20 + 8 + 6 + (m_ccMode == 20 ? 28 : 0)]; // ppp, ip, udp, SeqTs, INT
 			Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(m_devices[ifIndex]);
 			if (m_ccMode == 3){ // HPCC
-				ih->PushHop(Simulator::Now().GetTimeStep(), m_txBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());
+				ih->PushHop(Simulator::Now().GetTimeStep(), m_txBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate(), 0);
 			} else if (m_ccMode == 20){ // XCP-INT
-				half_float::half truncated = half_float::half_cast<half_float::half>(m_concflows_inc_sum);
-				uint64_t ui = static_cast<uint64_t>(truncated.data());
-				ih->PushHop(ui, m_rxBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate());
-				ui = ih->hop[0].GetTime();
-				m_concflows_inc_sum = half_float::half_cast<double>(half_float::half(static_cast<uint16_t>(ui)));
+				float truncated = static_cast<float>(m_xcpStateMap[ifIndex].m_concflows_inc_sum);
+				uint32_t ui;
+				std::memcpy(&ui, &truncated, sizeof(float));
+				truncated = static_cast<float>(m_xcpStateMap[ifIndex].m_numerator_running_sum);
+				uint32_t ui2;
+				std::memcpy(&ui2, &truncated, sizeof(float));
+				ih->PushHop(ui, m_rxBytes[ifIndex], dev->GetQueue()->GetNBytesTotal(), dev->GetDataRate().GetBitRate(), ui2);
 			}
 		}
 	}

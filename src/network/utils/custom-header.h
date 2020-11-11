@@ -109,6 +109,7 @@ namespace ns3 {
 		  uint16_t pg;
 		  uint32_t seq;
       uint64_t ts;
+      double rtt_estimate;
       double concflows_inc;
       uint32_t xcpId;
       IntHeader ih;

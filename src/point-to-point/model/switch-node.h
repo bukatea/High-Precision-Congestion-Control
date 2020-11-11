@@ -16,16 +16,20 @@ class SwitchNode : public Node{
 	static const uint32_t qCnt = 8;	// Number of queues/priorities used
 	uint32_t m_ecmpSeed;
 	std::unordered_map<uint32_t, std::vector<int> > m_rtTable; // map from ip address (u32) to possible ECMP port (index of dev)
+	static const double XCP_MAX_INTERVAL;
+	struct XcpState {
+		double m_numerator_running_sum;
+		double m_concflows_inc_sum;
+
+		XcpState();
+	};
+	std::unordered_map<uint32_t, XcpState> m_xcpStateMap; // maps nic idx to XCP per-link state
 
 	// monitor of PFC
 	uint32_t m_bytes[pCnt][pCnt][qCnt]; // m_bytes[inDev][outDev][qidx] is the bytes from inDev enqueued for outDev at qidx
 	
 	uint64_t m_txBytes[pCnt]; // counter of tx bytes
 	uint64_t m_rxBytes[pCnt];
-
-	double m_concflows_inc_sum;
-
-	uint32_t m_currPacketSize;
 
 protected:
 	bool m_ecnEnabled;

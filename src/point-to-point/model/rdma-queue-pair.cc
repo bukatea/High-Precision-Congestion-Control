@@ -54,12 +54,12 @@ namespace ns3 {
 
 		xcpint.m_rtt_estimator = CreateObject<RttMeanDeviation>();
 		xcpint.m_packet_size = 0;
-		xcpint.m_lastUpdateSeq = 0;
 		for (uint32_t i = 0; i < IntHeader::maxHop; i++) {
 			xcpint.hopState[i].m_valid = false;
 			xcpint.hopState[i].m_min_queue = std::numeric_limits<uint32_t>::max();
 			xcpint.hopState[i].m_start_rvbytes = 0;
-			xcpint.hopState[i].m_start_flow_sum = 0;
+			xcpint.hopState[i].m_start_num_flows = 0;
+			xcpint.hopState[i].m_start_numerator = 0;
 		}
 
 		tmly.m_lastUpdateSeq = 0;
