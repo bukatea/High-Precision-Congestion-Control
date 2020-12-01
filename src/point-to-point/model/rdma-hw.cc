@@ -244,7 +244,10 @@ namespace ns3{
 		}else if (m_cc_mode == 7){
 			qp->tmly.m_curRate = m_bps;
 		} else if (m_cc_mode == 20) {
-			qp->xcpint.m_curRate = m_bps;
+			qp->m_rate = std::ceil(m_mtu * 8.0 / (baseRtt / 1e9));
+			//qp->SetWin(m_mtu);
+			qp->xcpint.m_curRate = qp->m_rate;
+			//qp->xcpint.m_curRate = std::ceil(m_mtu * 8.0 / (baseRtt / 1e9));
 
 			m_avg_rtt = 0;
 			m_qp = qp;
@@ -528,6 +531,7 @@ namespace ns3{
 		uint32_t payload_size = qp->GetBytesLeft();
 		if (m_mtu < payload_size)
 			payload_size = m_mtu;
+		//std::cerr << "send " << qp->snd_nxt << " " << qp->GetWin() << std::endl;
 
 		Ptr<Packet> p = Create<Packet> (payload_size);
 
@@ -986,7 +990,7 @@ namespace ns3{
 
 	// TODO: mark packet that is in new control interval, also before starting a new control interval, make sure to use flow sum
 	void RdmaHw::HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
-		std::cout << "Sender ID: " << ch.ack.xcpId << std::endl;
+		//std::cout << "Sender ID: " << ch.ack.xcpId << std::endl;
 		NS_ASSERT(m_qpMap.size() == 1);
 
 		IntHeader &ih = ch.ack.ih;
@@ -1017,7 +1021,7 @@ namespace ns3{
 		// XCP ROUTER STUFF====================================
 
 		NS_ASSERT(ih.nhop <= IntHeader::maxHop);
-		std::cout << Simulator::Now().GetTimeStep() << " " << qp->sip.Get() << " " <<  qp->dip.Get() << " " << qp->sport << " " << qp->dport << " " << ch.ack.seq;
+		//std::cout << Simulator::Now().GetTimeStep() << " " << qp->sip.Get() << " " <<  qp->dip.Get() << " " << qp->sport << " " << qp->dport << " " << ch.ack.seq << " INT: ";
 		for (uint32_t i = 0; i < ih.nhop; i++) {
 			uint32_t ui = ih.hop[i].GetTime();
 			float num_active_flows;
@@ -1025,9 +1029,9 @@ namespace ns3{
 			ui = ih.hop[i].GetNumerator();
 			float the_numerator;
 			std::memcpy(&the_numerator, &ui, sizeof(float));
-			std::cout << " INT: " << ih.hop[i].GetQlen() << " " << ih.hop[i].GetBytes() << " " << num_active_flows << " " << the_numerator;
+			//std::cout << "[" << ih.hop[i].GetQlen() << ", " << ih.hop[i].GetBytes() << ", " << num_active_flows << ", " << the_numerator << "] ";
 		}
-		std::cout << std::endl;
+		//std::cout << std::endl;
 
 		// if (qp->xcpint.m_delta_throughput >= feedback) {
 		// 	qp->xcpint.m_delta_throughput = feedback;
