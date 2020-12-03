@@ -244,13 +244,16 @@ namespace ns3{
 		}else if (m_cc_mode == 7){
 			qp->tmly.m_curRate = m_bps;
 		} else if (m_cc_mode == 20) {
-			qp->m_rate = std::ceil(m_mtu * 8.0 / (baseRtt / 1e9));
+			//qp->m_rate = std::ceil(m_mtu * 8.0 / (baseRtt / 1e9));
 			//qp->SetWin(m_mtu);
 			qp->xcpint.m_curRate = qp->m_rate;
 			//qp->xcpint.m_curRate = std::ceil(m_mtu * 8.0 / (baseRtt / 1e9));
+			qp->xcpint.m_rtt_estimator->Measurement(TimeStep(baseRtt));
 
-			m_avg_rtt = 0;
+			m_avg_rtt = baseRtt / 1e9;
 			m_qp = qp;
+
+			std::cout << "initial rate " << qp->xcpint.m_curRate.GetBitRate() << ", initial avg_rtt " << m_avg_rtt << std::endl;
 		}
 
 	// Notify Nic
@@ -1011,7 +1014,7 @@ namespace ns3{
 			qp->xcpint.hop[i] = ih.hop[i];
 			if (!qp->xcpint.hopState[i].m_valid) {
 				qp->xcpint.hopState[i].m_valid = true;
-				m_Te = m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
+				m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
 				Te_timeout();
 			}
 		}
