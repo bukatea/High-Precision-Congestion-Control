@@ -920,7 +920,8 @@ int main(int argc, char *argv[])
 
 	for (uint32_t i = 0; i < flow_num; i++)
 	{
-		uint32_t src, dst, pg, maxPacketCount, port, dport;
+		uint32_t src, dst, pg, port, dport;
+		uint64_t maxPacketCount;
 		double start_time, stop_time;
 		flowf >> src >> dst >> pg >> dport >> maxPacketCount >> start_time;
 		NS_ASSERT(n.Get(src)->GetNodeType() == 0 && n.Get(dst)->GetNodeType() == 0);
