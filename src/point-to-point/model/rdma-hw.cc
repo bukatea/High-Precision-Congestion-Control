@@ -1008,15 +1008,19 @@ namespace ns3{
 		// RETRIEVE XCP INFORMATION============================
 
 		NS_ASSERT(ih.nhop <= IntHeader::maxHop);
+		bool validated = false;
 		for (uint32_t i = 0; i < ih.nhop; i++) {
 			if (ih.hop[i].GetQlen() < qp->xcpint.hopState[i].m_min_queue)
 				qp->xcpint.hopState[i].m_min_queue = ih.hop[i].GetQlen();
 			qp->xcpint.hop[i] = ih.hop[i];
 			if (!qp->xcpint.hopState[i].m_valid) {
 				qp->xcpint.hopState[i].m_valid = true;
-				m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
-				Te_timeout();
+				validated = true;
 			}
+		}
+		if (validated) {
+			m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
+			Te_timeout();
 		}
 
 		// END RETRIEVE XCP INFORMATION========================
