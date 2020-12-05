@@ -11,8 +11,33 @@
 #include <vector>
 #include <ns3/rtt-estimator.h>
 #include <utility>
+#include <ns3/timer.h>
 
 namespace ns3 {
+
+	class RdmaQueuePair;
+	struct HopState {
+		static const double ALPHA;
+		static const double BETA;
+		static const double GAMMA;
+	
+		Ptr<RdmaQueuePair> m_qp;
+
+		IntHop hop;
+		bool m_valid;
+		uint32_t m_min_queue;
+		uint64_t m_start_rvbytes;
+		double m_start_num_flows;
+		double m_start_numerator;
+
+		double m_avg_rtt;
+		Time m_Te;
+		Timer m_avg_rtt_timer;
+
+		double m_fbk;
+
+		void Te_timeout();
+	};
 
 	class RdmaQueuePair : public Object {
 	public:
@@ -64,14 +89,7 @@ namespace ns3 {
 		Ptr<RttMeanDeviation> m_rtt_estimator;
 		uint32_t m_packet_size;
 		DataRate m_curRate;
-		IntHop hop[IntHeader::maxHop];
-		struct {
-			bool m_valid;
-			uint32_t m_min_queue;
-			uint64_t m_start_rvbytes;
-			double m_start_num_flows;
-			double m_start_numerator;
-		} hopState[IntHeader::maxHop];
+		HopState hopState[IntHeader::maxHop];
 	} xcpint;
 	struct{
 		uint32_t m_lastUpdateSeq;
@@ -93,7 +111,7 @@ namespace ns3 {
 	 * methods
 	 **********/
 	static TypeId GetTypeId (void);
-	RdmaQueuePair(uint16_t pg, Ipv4Address _sip, Ipv4Address _dip, uint16_t _sport, uint16_t _dport);
+	RdmaQueuePair(uint16_t pg, Ipv4Address _sip, Ipv4Address _dip, uint16_t _sport, uint16_t _dport, uint64_t baseRtt);
 	void SetSize(uint64_t size);
 	void SetWin(uint32_t win);
 	void SetBaseRtt(uint64_t baseRtt);

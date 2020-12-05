@@ -217,7 +217,7 @@ namespace ns3{
 	}
 	void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Address dip, uint16_t sport, uint16_t dport, uint32_t win, uint64_t baseRtt){
 	// create qp
-		Ptr<RdmaQueuePair> qp = CreateObject<RdmaQueuePair>(pg, sip, dip, sport, dport);
+		Ptr<RdmaQueuePair> qp = CreateObject<RdmaQueuePair>(pg, sip, dip, sport, dport, baseRtt);
 		qp->SetSize(size);
 		qp->SetWin(win);
 		qp->SetBaseRtt(baseRtt);
@@ -250,10 +250,10 @@ namespace ns3{
 			//qp->xcpint.m_curRate = std::ceil(m_mtu * 8.0 / (baseRtt / 1e9));
 			qp->xcpint.m_rtt_estimator->Measurement(TimeStep(baseRtt));
 
-			m_avg_rtt = baseRtt / 1e9;
+			m_control_interval = baseRtt / 1e9;
 			m_qp = qp;
 
-			std::cout << "initial rate " << qp->xcpint.m_curRate.GetBitRate() << ", initial avg_rtt " << m_avg_rtt << std::endl;
+			std::cout << "initial rate " << qp->xcpint.m_curRate.GetBitRate() << ", initial control_interval " << m_control_interval << std::endl;
 		}
 
 	// Notify Nic
@@ -494,6 +494,11 @@ namespace ns3{
 			Simulator::Cancel(qp->mlx.m_eventDecreaseRate);
 			Simulator::Cancel(qp->mlx.m_rpTimer);
 		} else if (m_cc_mode == 20) {
+			for (uint32_t i = 0; i < IntHeader::maxHop; i++) {
+				if (qp->xcpint.hopState[i].m_valid) {
+					qp->xcpint.hopState[i].m_avg_rtt_timer.Cancel();
+				}
+			}
 			m_estimation_control_timer.Cancel();
 		}
 		m_qpCompleteCallback(qp);
@@ -561,7 +566,7 @@ namespace ns3{
 		if (IntHeader::mode == 20) {
 			seqTs.m_xcpId = qp->sip.Get();
 			seqTs.m_rtt_estimate = qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds();
-			seqTs.m_concflows_inc = (m_avg_rtt != 0 ? qp->xcpint.m_packet_size / (qp->xcpint.m_curRate.GetBitRate() / 8.0 * m_avg_rtt) : 0);
+			seqTs.m_concflows_inc = (m_control_interval != 0 ? qp->xcpint.m_packet_size / (qp->xcpint.m_curRate.GetBitRate() / 8.0 * m_control_interval) : 0);
 		}
 
 		// add SeqTsHeader
@@ -918,76 +923,27 @@ namespace ns3{
 	/***********************
 	 * XCP-INT
 	 ***********************/
-	const double RdmaHw::ALPHA = 0.4;
-	const double RdmaHw::BETA = 0.226;
-	const double RdmaHw::GAMMA = 0.1;
 
-	void RdmaHw::Te_timeout() {
+	void RdmaHw::control_timeout() {
 		double save_avg_rtt = 0;
 		double min_feedback = std::numeric_limits<double>::max();
 		for (uint32_t i = 0; i < IntHeader::maxHop; i++) {
 			// per hop
 			if (m_qp->xcpint.hopState[i].m_valid) {
-				uint32_t raw_num_active_flows = m_qp->xcpint.hop[i].GetTime();
-				float float_flows;
-				std::memcpy(&float_flows, &raw_num_active_flows, sizeof(float));
-				double num_active_flows = float_flows;
-
-				uint32_t raw_numerator = m_qp->xcpint.hop[i].GetNumerator();
-				float float_numerator;
-				std::memcpy(&float_numerator, &raw_numerator, sizeof(float));
-				double numerator = float_numerator;
-
-				if (num_active_flows - m_qp->xcpint.hopState[i].m_start_num_flows == 0) {
-					m_avg_rtt = m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds();
-					num_active_flows = m_qp->xcpint.hopState[i].m_start_num_flows + 1;
-				} else {
-					m_avg_rtt = (numerator - m_qp->xcpint.hopState[i].m_start_numerator) / (num_active_flows - m_qp->xcpint.hopState[i].m_start_num_flows);
+				if (m_qp->xcpint.hopState[i].m_fbk < min_feedback) {
+					min_feedback = m_qp->xcpint.hopState[i].m_fbk;
+					save_avg_rtt = m_qp->xcpint.hopState[i].m_avg_rtt;
 				}
-
-				double phi_bps = 0.0;
-				double shuffled_traffic_bps = 0.0;
-
-				uint64_t rv = m_qp->xcpint.hop[i].GetBytes() - m_qp->xcpint.hopState[i].m_start_rvbytes;
-				double input_bw = rv / m_Te.GetSeconds();
-				int64_t spare_bw = m_qp->xcpint.hop[i].GetLineRate() / 8.0 - input_bw;
-				phi_bps = ALPHA * spare_bw - BETA * m_qp->xcpint.hopState[i].m_min_queue / m_avg_rtt;
-				shuffled_traffic_bps = GAMMA * input_bw;
-
-				if (shuffled_traffic_bps > std::abs(phi_bps))
-					shuffled_traffic_bps -= std::abs(phi_bps);
-				else
-					shuffled_traffic_bps = 0.0;
-
-				double residue_pos_fbk = std::max(0.0, phi_bps) + shuffled_traffic_bps;
-				double residue_neg_fbk = std::max(0.0, -phi_bps) + shuffled_traffic_bps;
-
-				//double pos_fbk = residue_pos_fbk * m_qp->xcpint.m_packet_size / (m_qp->xcpint.m_curRate.GetBitRate() / 8.0 * (num_active_flows - m_qp->xcpint.hopState[i].m_start_num_flows) * m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds());
-				//double neg_fbk = residue_neg_fbk * m_qp->xcpint.m_packet_size / rv;
-				double pos_fbk = residue_pos_fbk * m_avg_rtt / ((num_active_flows - m_qp->xcpint.hopState[i].m_start_num_flows) * m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds());
-				double neg_fbk = residue_neg_fbk * m_avg_rtt * (m_qp->xcpint.m_curRate.GetBitRate() / 8.0) / rv;
-				double fbk = pos_fbk - neg_fbk;
-				//std::cerr << m_avg_rtt << " " << m_Te.GetSeconds() << " " << rv << " " << spare_bw << " " << m_qp->xcpint.hopState[i].m_min_queue << " " << m_qp->xcpint.m_packet_size << " " << phi_bps << " " << shuffled_traffic_bps << " " << residue_pos_fbk << " " << residue_neg_fbk << " " << (num_active_flows - m_qp->xcpint.hopState[i].m_start_num_flows) << " " << pos_fbk << " " << neg_fbk << " " << fbk << std::endl;	
-
-				if (fbk < min_feedback) {
-					min_feedback = fbk;
-					save_avg_rtt = m_avg_rtt;
-				}
-
-				m_qp->xcpint.hopState[i].m_min_queue = std::numeric_limits<uint32_t>::max();
-				m_qp->xcpint.hopState[i].m_start_rvbytes = m_qp->xcpint.hop[i].GetBytes();
-				m_qp->xcpint.hopState[i].m_start_num_flows = float_flows;
-				m_qp->xcpint.hopState[i].m_start_numerator = float_numerator;
 			}
 		}
 		m_qp->xcpint.m_curRate = DataRate(std::max(std::min(m_qp->xcpint.m_curRate.GetBitRate() + static_cast<uint64_t>(min_feedback * 8), m_qp->m_max_rate.GetBitRate()), static_cast<uint64_t>(m_qp->xcpint.m_packet_size * 8 / m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds())));
 		ChangeRate(m_qp, m_qp->xcpint.m_curRate);
-		m_avg_rtt = save_avg_rtt;
-		std::cout << "new rate " << m_qp->xcpint.m_curRate.GetBitRate() << ", new avg_rtt " << m_avg_rtt << std::endl;
+		m_control_interval = save_avg_rtt;
+		std::cout << "new rate " << m_qp->xcpint.m_curRate.GetBitRate() << ", new control_interval " << m_control_interval << std::endl;
 
-		m_Te = Seconds(m_avg_rtt);
-		m_estimation_control_timer.SetDelay(m_Te);
-		m_estimation_control_timer.SetFunction(&RdmaHw::Te_timeout, this);
+		m_Tc = Seconds(m_control_interval);
+		m_estimation_control_timer.SetDelay(m_Tc);
+		m_estimation_control_timer.SetFunction(&RdmaHw::control_timeout, this);
 		m_estimation_control_timer.Schedule();
 	}
 
@@ -1012,15 +968,16 @@ namespace ns3{
 		for (uint32_t i = 0; i < ih.nhop; i++) {
 			if (ih.hop[i].GetQlen() < qp->xcpint.hopState[i].m_min_queue)
 				qp->xcpint.hopState[i].m_min_queue = ih.hop[i].GetQlen();
-			qp->xcpint.hop[i] = ih.hop[i];
+			qp->xcpint.hopState[i].hop = ih.hop[i];
 			if (!qp->xcpint.hopState[i].m_valid) {
 				qp->xcpint.hopState[i].m_valid = true;
 				validated = true;
+				qp->xcpint.hopState[i].m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
+				qp->xcpint.hopState[i].Te_timeout();
 			}
 		}
 		if (validated) {
-			m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
-			Te_timeout();
+			control_timeout();
 		}
 
 		// END RETRIEVE XCP INFORMATION========================
