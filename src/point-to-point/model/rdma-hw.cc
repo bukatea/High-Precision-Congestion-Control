@@ -496,6 +496,7 @@ namespace ns3{
 		} else if (m_cc_mode == 20) {
 			for (uint32_t i = 0; i < IntHeader::maxHop; i++) {
 				if (qp->xcpint.hopState[i].m_valid) {
+					qp->xcpint.hopState[i].m_queue_timer.Cancel();
 					qp->xcpint.hopState[i].m_avg_rtt_timer.Cancel();
 				}
 			}
@@ -966,12 +967,13 @@ namespace ns3{
 		NS_ASSERT(ih.nhop <= IntHeader::maxHop);
 		bool validated = false;
 		for (uint32_t i = 0; i < ih.nhop; i++) {
-			if (ih.hop[i].GetQlen() < qp->xcpint.hopState[i].m_min_queue)
-				qp->xcpint.hopState[i].m_min_queue = ih.hop[i].GetQlen();
+			if (ih.hop[i].GetQlen() < qp->xcpint.hopState[i].m_running_min_queue)
+				qp->xcpint.hopState[i].m_running_min_queue = ih.hop[i].GetQlen();
 			qp->xcpint.hopState[i].hop = ih.hop[i];
 			if (!qp->xcpint.hopState[i].m_valid) {
 				qp->xcpint.hopState[i].m_valid = true;
 				validated = true;
+				qp->xcpint.hopState[i].Tq_timeout();
 				qp->xcpint.hopState[i].m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
 				qp->xcpint.hopState[i].Te_timeout();
 			}

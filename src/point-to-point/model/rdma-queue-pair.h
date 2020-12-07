@@ -20,12 +20,12 @@ namespace ns3 {
 		static const double ALPHA;
 		static const double BETA;
 		static const double GAMMA;
+		double ALLOWED_QUEUE;
 	
 		Ptr<RdmaQueuePair> m_qp;
 
 		IntHop hop;
 		bool m_valid;
-		uint32_t m_min_queue;
 		uint64_t m_start_rvbytes;
 		double m_start_num_flows;
 		double m_start_numerator;
@@ -34,8 +34,14 @@ namespace ns3 {
 		Time m_Te;
 		Timer m_avg_rtt_timer;
 
+		uint32_t m_queue_bytes;
+		uint32_t m_running_min_queue;
+		Time m_Tq;
+		Timer m_queue_timer;
+
 		double m_fbk;
 
+		void Tq_timeout();
 		void Te_timeout();
 	};
 
