@@ -974,7 +974,7 @@ namespace ns3{
 					save_avg_rtt = m_avg_rtt;
 				}
 
-				m_qp->xcpint.hopState[i].m_min_queue = std::numeric_limits<uint32_t>::max();
+				m_qp->xcpint.hopState[i].m_min_queue = m_qp->xcpint.hop[i].GetQlen();
 				m_qp->xcpint.hopState[i].m_start_rvbytes = m_qp->xcpint.hop[i].GetBytes();
 				m_qp->xcpint.hopState[i].m_start_num_flows = float_flows;
 				m_qp->xcpint.hopState[i].m_start_numerator = float_numerator;
