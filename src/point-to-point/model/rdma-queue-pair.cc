@@ -57,11 +57,12 @@ namespace ns3 {
 		for (uint32_t i = 0; i < IntHeader::maxHop; i++) {
 			xcpint.hopState[i].m_qp = Ptr<RdmaQueuePair>(this);
 			xcpint.hopState[i].m_valid = false;
-			xcpint.hopState[i].m_min_queue = std::numeric_limits<uint32_t>::max();
+			xcpint.hopState[i].m_running_min_queue = std::numeric_limits<uint32_t>::max();
 			xcpint.hopState[i].m_start_rvbytes = 0;
 			xcpint.hopState[i].m_start_num_flows = 0;
 			xcpint.hopState[i].m_start_numerator = 0;
 			xcpint.hopState[i].m_avg_rtt = baseRtt / 1e9;
+			xcpint.hopState[i].ALLOWED_QUEUE = xcpint.hopState[i].m_avg_rtt / 10;
 		}
 
 		tmly.m_lastUpdateSeq = 0;
@@ -80,6 +81,17 @@ namespace ns3 {
 	const double HopState::ALPHA = 0.4;
 	const double HopState::BETA = 0.226;
 	const double HopState::GAMMA = 0.1;
+
+	void HopState::Tq_timeout() {
+		m_queue_bytes = m_running_min_queue;
+		m_running_min_queue = hop.GetQlen();
+
+		m_Tq = Seconds(std::max(ALLOWED_QUEUE, (m_avg_rtt - hop.GetQlen() / (hop.GetLineRate() / 8.0)) / 2.0));
+		std::cerr << m_queue_bytes << " " << m_running_min_queue << " " << m_Tq << std::endl;
+		m_queue_timer.SetDelay(m_Tq);
+		m_queue_timer.SetFunction(&HopState::Tq_timeout, this);
+		m_queue_timer.Schedule();
+	}
 
 	void HopState::Te_timeout() {
 		uint32_t raw_num_active_flows = hop.GetTime();
@@ -105,7 +117,7 @@ namespace ns3 {
 		uint64_t rv = hop.GetBytes() - m_start_rvbytes;
 		double input_bw = rv / m_Te.GetSeconds();
 		int64_t spare_bw = hop.GetLineRate() / 8.0 - input_bw;
-		phi_bps = ALPHA * spare_bw - BETA * m_min_queue / m_avg_rtt;
+		phi_bps = ALPHA * spare_bw - BETA * m_queue_bytes / m_avg_rtt;
 		shuffled_traffic_bps = GAMMA * input_bw;
 
 		if (shuffled_traffic_bps > std::abs(phi_bps))
@@ -121,9 +133,8 @@ namespace ns3 {
 		double pos_fbk = residue_pos_fbk * m_avg_rtt / ((num_active_flows - m_start_num_flows) * m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds());
 		double neg_fbk = residue_neg_fbk * m_avg_rtt * (m_qp->xcpint.m_curRate.GetBitRate() / 8.0) / rv;
 		m_fbk = pos_fbk - neg_fbk;
-		std::cerr << m_avg_rtt << " " << m_Te.GetSeconds() << " " << rv << " " << spare_bw << " " << m_min_queue << " " << m_qp->xcpint.m_packet_size << " " << phi_bps << " " << shuffled_traffic_bps << " " << residue_pos_fbk << " " << residue_neg_fbk << " " << (num_active_flows - m_start_num_flows) << " " << pos_fbk << " " << neg_fbk << " " << m_fbk << std::endl;	
+		std::cerr << m_avg_rtt << " " << m_Te.GetSeconds() << " " << rv << " " << spare_bw << " " << m_queue_bytes << " " << m_qp->xcpint.m_packet_size << " " << phi_bps << " " << shuffled_traffic_bps << " " << residue_pos_fbk << " " << residue_neg_fbk << " " << (num_active_flows - m_start_num_flows) << " " << pos_fbk << " " << neg_fbk << " " << m_fbk << std::endl;	
 
-		m_min_queue = std::numeric_limits<uint32_t>::max();
 		m_start_rvbytes = hop.GetBytes();
 		m_start_num_flows = float_flows;
 		m_start_numerator = float_numerator;
