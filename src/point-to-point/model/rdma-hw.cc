@@ -253,6 +253,11 @@ namespace ns3{
 			m_avg_rtt = baseRtt / 1e9;
 			m_qp = qp;
 
+			m_Te = Seconds(m_avg_rtt);
+			m_estimation_control_timer.SetDelay(m_Te);
+			m_estimation_control_timer.SetFunction(&RdmaHw::empty_timeout, this);
+			m_estimation_control_timer.Schedule();
+
 			std::cout << "initial rate " << qp->xcpint.m_curRate.GetBitRate() << ", initial avg_rtt " << m_avg_rtt << std::endl;
 		}
 
@@ -1019,8 +1024,12 @@ namespace ns3{
 			}
 		}
 		if (validated) {
-			m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
-			Te_timeout();
+			if (m_estimation_control_timer.IsExpired()) {
+				m_Te = qp->xcpint.m_rtt_estimator->GetCurrentEstimate();
+				Te_timeout();
+			} else {
+				m_estimation_control_timer.SetFunction(&RdmaHw::Te_timeout, this);
+			}
 		}
 
 		// END RETRIEVE XCP INFORMATION========================
