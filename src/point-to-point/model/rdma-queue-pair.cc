@@ -128,9 +128,9 @@ namespace ns3 {
 		double residue_pos_fbk = std::max(0.0, phi_bps) + shuffled_traffic_bps;
 		double residue_neg_fbk = std::max(0.0, -phi_bps) + shuffled_traffic_bps;
 
-		//double pos_fbk = residue_pos_fbk * m_qp->xcpint.m_packet_size / (m_qp->xcpint.m_curRate.GetBitRate() / 8.0 * (num_active_flows - m_start_num_flows) * m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds());
+		//double pos_fbk = residue_pos_fbk * m_qp->xcpint.m_packet_size / (m_qp->xcpint.m_curRate.GetBitRate() / 8.0 * m_avg_rtt * (num_active_flows - m_start_num_flows));
 		//double neg_fbk = residue_neg_fbk * m_qp->xcpint.m_packet_size / rv;
-		double pos_fbk = residue_pos_fbk * m_avg_rtt / ((num_active_flows - m_start_num_flows) * m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds());
+		double pos_fbk = residue_pos_fbk / (num_active_flows - m_start_num_flows);
 		double neg_fbk = residue_neg_fbk * m_avg_rtt * (m_qp->xcpint.m_curRate.GetBitRate() / 8.0) / rv;
 		m_fbk = pos_fbk - neg_fbk;
 		std::cerr << m_avg_rtt << " " << m_Te.GetSeconds() << " " << rv << " " << spare_bw << " " << m_queue_bytes << " " << m_qp->xcpint.m_packet_size << " " << phi_bps << " " << shuffled_traffic_bps << " " << residue_pos_fbk << " " << residue_neg_fbk << " " << (num_active_flows - m_start_num_flows) << " " << pos_fbk << " " << neg_fbk << " " << m_fbk << std::endl;	
