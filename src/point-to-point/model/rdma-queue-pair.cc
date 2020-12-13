@@ -87,7 +87,7 @@ namespace ns3 {
 		m_running_min_queue = hop.GetQlen();
 
 		m_Tq = Seconds(std::max(ALLOWED_QUEUE, (m_avg_rtt - hop.GetQlen() / (hop.GetLineRate() / 8.0)) / 2.0));
-		std::cerr << m_queue_bytes << " " << m_running_min_queue << " " << m_Tq << std::endl;
+		//std::cerr << m_queue_bytes << " " << m_running_min_queue << " " << m_Tq << std::endl;
 		m_queue_timer.SetDelay(m_Tq);
 		m_queue_timer.SetFunction(&HopState::Tq_timeout, this);
 		m_queue_timer.Schedule();
@@ -133,7 +133,7 @@ namespace ns3 {
 		double pos_fbk = residue_pos_fbk / (num_active_flows - m_start_num_flows);
 		double neg_fbk = residue_neg_fbk * m_avg_rtt * (m_qp->xcpint.m_curRate.GetBitRate() / 8.0) / rv;
 		m_fbk = pos_fbk - neg_fbk;
-		std::cerr << m_avg_rtt << " " << m_Te.GetSeconds() << " " << rv << " " << spare_bw << " " << m_queue_bytes << " " << m_qp->xcpint.m_packet_size << " " << phi_bps << " " << shuffled_traffic_bps << " " << residue_pos_fbk << " " << residue_neg_fbk << " " << (num_active_flows - m_start_num_flows) << " " << pos_fbk << " " << neg_fbk << " " << m_fbk << std::endl;	
+		//std::cerr << m_avg_rtt << " " << m_Te.GetSeconds() << " " << rv << " " << spare_bw << " " << m_queue_bytes << " " << m_qp->xcpint.m_packet_size << " " << phi_bps << " " << shuffled_traffic_bps << " " << residue_pos_fbk << " " << residue_neg_fbk << " " << (num_active_flows - m_start_num_flows) << " " << pos_fbk << " " << neg_fbk << " " << m_fbk << std::endl;	
 
 		m_start_rvbytes = hop.GetBytes();
 		m_start_num_flows = float_flows;
