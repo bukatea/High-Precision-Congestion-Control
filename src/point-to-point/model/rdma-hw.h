@@ -133,19 +133,11 @@ namespace ns3 {
 	/**********************
 	 * XCP-INT
 	 *********************/
-	static const double ALPHA;
-	static const double BETA;
-	static const double GAMMA;
-
-	double m_avg_rtt;
-
-	Time m_Te;
+	double m_control_interval;
+	Time m_Tc;
 	Timer m_estimation_control_timer;
 
-	void empty_timeout() {
-		
-	}
-	void Te_timeout();
+	void control_timeout();
 
 	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void UpdateRateXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
