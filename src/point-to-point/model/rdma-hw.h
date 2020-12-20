@@ -137,6 +137,8 @@ namespace ns3 {
 	Time m_Tc;
 	Timer m_estimation_control_timer;
 
+	double m_feedback;
+
 	void control_timeout();
 
 	void HandleAckXcpint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);

@@ -252,6 +252,7 @@ namespace ns3{
 
 			m_control_interval = baseRtt / 1e9;
 			m_qp = qp;
+			m_feedback = 0;
 
 			std::cout << "initial rate " << qp->xcpint.m_curRate.GetBitRate() << ", initial control_interval " << m_control_interval << std::endl;
 		}
@@ -927,20 +928,18 @@ namespace ns3{
 
 	void RdmaHw::control_timeout() {
 		double save_avg_rtt = 0;
-		double min_feedback = std::numeric_limits<double>::max();
+		m_feedback = std::numeric_limits<double>::max();
 		for (uint32_t i = 0; i < IntHeader::maxHop; i++) {
 			// per hop
 			if (m_qp->xcpint.hopState[i].m_valid) {
-				if (m_qp->xcpint.hopState[i].m_fbk < min_feedback) {
-					min_feedback = m_qp->xcpint.hopState[i].m_fbk;
+				if (m_qp->xcpint.hopState[i].m_fbk < m_feedback) {
+					m_feedback = m_qp->xcpint.hopState[i].m_fbk;
 					save_avg_rtt = m_qp->xcpint.hopState[i].m_avg_rtt;
 				}
 			}
 		}
-		m_qp->xcpint.m_curRate = DataRate(std::max(std::min(m_qp->xcpint.m_curRate.GetBitRate() + static_cast<uint64_t>(min_feedback * 8), m_qp->m_max_rate.GetBitRate()), static_cast<uint64_t>(m_qp->xcpint.m_packet_size * 8 / m_qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds())));
-		ChangeRate(m_qp, m_qp->xcpint.m_curRate);
 		m_control_interval = save_avg_rtt;
-		std::cout << "new rate " << m_qp->xcpint.m_curRate.GetBitRate() << ", new control_interval " << m_control_interval << std::endl;
+		std::cout << "rate on control_interval timeout " << m_qp->xcpint.m_curRate.GetBitRate() << ", new control_interval " << m_control_interval << std::endl;
 
 		m_Tc = Seconds(m_control_interval);
 		m_estimation_control_timer.SetDelay(m_Tc);
@@ -998,6 +997,10 @@ namespace ns3{
 			//std::cout << "[" << ih.hop[i].GetQlen() << ", " << ih.hop[i].GetBytes() << ", " << num_active_flows << ", " << the_numerator << "] ";
 		}
 		//std::cout << std::endl;
+
+		qp->xcpint.m_curRate = DataRate(std::max(std::min(qp->xcpint.m_curRate.GetBitRate() + static_cast<uint64_t>(m_feedback * 8), qp->m_max_rate.GetBitRate()), static_cast<uint64_t>(qp->xcpint.m_packet_size * 8 / qp->xcpint.m_rtt_estimator->GetCurrentEstimate().GetSeconds())));
+		ChangeRate(qp, qp->xcpint.m_curRate);
+		//std::cout << "new rate " << qp->xcpint.m_curRate.GetBitRate() << std::endl;
 
 		// if (qp->xcpint.m_delta_throughput >= feedback) {
 		// 	qp->xcpint.m_delta_throughput = feedback;
